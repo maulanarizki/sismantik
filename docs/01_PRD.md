@@ -1,80 +1,100 @@
 # PRODUCT REQUIREMENT DOCUMENT (PRD)
-## Proyek: SISMANTIK (Sistem Monitoring & Analisis Sentimen Publik Mandiri)
-**Target Pengguna:** Pemerintah Daerah (Dinas Kominfo, Pimpinan Daerah, Organisasi Perangkat Daerah / OPD)  
-**Lisensi & Ketergantungan:** 100% Open Source, Self-Hosted Native Local (Non-Docker), Zero Paid API Dependency.  
-**Basis Data:** MySQL 8.x (`hantu` @ 127.0.0.1:3306)
+## Proyek: SISMANTIK PRO (Sistem Pemantauan Sentimen & Intelijen Media Publik)
+**Target Pengguna:** Pemerintah Daerah (Dinas Kominfo, Bupati/Wakil Bupati, Sekretaris Daerah, dan 10 OPD Pemkab Jombang)  
+**Lingkungan Operasional:** 100% Mandiri, Native Host Laptop/Server (Non-Docker), Zero Paid API Dependency  
+**Basis Data:** MySQL 8.x / MariaDB 11.x (`hantu` @ 127.0.0.1:3306)  
+**Status Implementasi:** **Aktif & Siap Produksi (Executive Command Center Native Blade + FastAPI)**
 
 ---
 
 ### 1. Eksekutif Ringkasan (Executive Summary)
-SISMANTIK adalah platform intelijen media dan opini publik mandiri (*self-hosted*) yang dirancang khusus untuk pemerintah daerah guna memantau pemberitaan media daring dan percakapan media sosial (Facebook, Instagram, TikTok, X, portal berita lokal/nasional). 
+SISMANTIK PRO adalah platform intelijen media dan opini publik mandiri (*self-hosted media intelligence platform*) yang dirancang khusus untuk Pemerintah Kabupaten Jombang. Sistem ini bertugas memantau pemberitaan media daring (lokal Jawa Timur, nasional, dan agregator Google News) serta percakapan media sosial secara *real-time*.
 
-Sistem ini beroperasi **100% mandiri tanpa ketergantungan API berbayar pihak ketiga** (seperti Apify, BrightData, OpenAI API, atau Google Cloud NLP). Sistem dirancang berjalan langsung (*natively*) pada lingkungan mesin lokal/laptop tanpa overhead container Docker, menggunakan database MySQL lokal dan pustaka open-source (*IndoBERT, PyTorch CPU, Trafilatura, Playwright, MinHash*).
+Sistem beroperasi **100% mandiri tanpa ketergantungan API komersial berbayar** (Rp 0,- biaya lisensi eksternal), berjalan langsung (*natively*) pada lingkungan Linux lokal tanpa container Docker. Menggabungkan backend analitik **PHP 8.4 / Laravel 11** dengan microservice **Python 3.13 / FastAPI** yang menjalankan model inferensi IndoBERT multi-aspek, VADER, dan MinHash LSH.
 
----
-
-### 2. Latar Belakang & Permasalahan (Problem Statement)
-1. **Ketergantungan Vendor & Biaya Tinggi:** Layanan *media monitoring* komersial mematok biaya langganan puluhan hingga ratusan juta rupiah per bulan dengan batasan kuota *mention*.
-2. **Kerahasiaan & Kedaulatan Data Publik:** Data keluhan dan isu sensitif daerah tidak aman jika dialirkan ke cloud pihak ketiga publik tanpa tata kelola internal.
-3. **Karakteristik Teks Lokal:** Opini warga di daerah didominasi oleh bahasa gaul, singkatan (*typo*), sarkasme, dan percampuran bahasa daerah (seperti Bahasa Jawa/Sunda). Model NLP luar negeri sering gagal menangkap sentimen asli.
-4. **Fleksibilitas Deployment & Lingkungan Ringan:** Sistem harus bisa berjalan secara efisien langsung di lingkungan laptop/server lokal pengembang tanpa beban berat dari container Docker.
+Antarmuka pengguna menggunakan arsitektur **Executive Command Center murni (Laravel Blade, Tailwind CSS, Alpine.js, Chart.js, dan Leaflet GIS)** yang dirancang dengan kontras tinggi (*high contrast*), responsif, bebas dari ketergantungan Filament bawaan, serta mendukung peralihan instan tema Terang (*Light*) dan Gelap (*Dark*).
 
 ---
 
-### 3. Tujuan & Tolok Ukur Keberhasilan (Objectives & KPIs)
-* **Zero External API Cost:** Biaya operasional lisensi API eksternal = Rp 0,-.
-* **Akurasi Sentimen Bahasa Indonesia & Daerah:** F1-Score model klasifikasi sentimen $\ge 88\%$ pada dataset komentar publik lokal.
-* **Latency Ingestion & Scraping:** Waktu sinkronisasi manual untuk 50 artikel/komentar $\le 30$ detik pada mesin laptop lokal.
-* **Local Native Execution:** Berjalan mulus di PHP 8.4, Python 3.13, MySQL 8, dan Redis lokal tanpa Docker.
-* **Early Warning Time:** Notifikasi anomali krisis publik terkirim ke Telegram/WhatsApp dalam waktu $\le 3$ menit sejak isu terdeteksi.
+### 2. Latar Belakang & Masalah Riil yang Dipecahkan (Problem Statement)
+1. **Biaya API Berbayar & Kuota Terbatas:** Layanan komersial mematok biaya puluhan juta per bulan dengan batasan kuota *mention*. SISMANTIK memproses ribuan data tanpa kuota dan tanpa biaya API.
+2. **Kedaulatan & Keamanan Data:** Seluruh data keluhan warga, data aduan OPD, dan hasil analisis sentimen tersimpan secara privat di database MySQL lokal (`hantu`).
+3. **Karakteristik Teks Lokal Jombang & Jawa Timuran:** Opini publik lokal sarat akan bahasa gaul daerah (*"dalan ajur", "rusak parah", "tambal sulam", "bapuk"*). Model NLP dilengkapi kamus normalisasi slang lokal.
+4. **Kebutuhan Dashboard Eksekutif Khas Pimpinan:** Menggantikan tampilan admin standar dengan antarmuka *war-room* eksekutif yang menyajikan 4 Master KPI, grafik tren 12 bulan berdasarkan tanggal terbit berita (`published_at`), dan bilik interaktif *drilldown* artikel berita secara langsung ketika komponen diklik.
 
 ---
 
-### 4. Persona Pengguna (User Personas)
-| Persona | Peran | Kebutuhan Utama |
+### 3. Tolok Ukur Keberhasilan (Real KPIs & Status Terkini)
+* **Zero External API Cost:** Biaya operasional lisensi API eksternal = **Rp 0,-**.
+* **Kecepatan Inferensi CPU:** Pemrosesan batch NLP memanfaatkan 12 CPU Cores secara optimal ($\approx 50$ artikel per 5-10 detik).
+* **Dataset Riil Aktif:** Telah memuat dan menganalisis **2.952 berita terkurasi** dalam kurun waktu 12 bulan terakhir seputar Kabupaten Jombang.
+* **Basemap GIS Bebas Watermark:** Menggunakan OpenStreetMap dan Esri World Imagery (bebas watermark CartoDB "API KEY REQUIRED").
+* **Akurasi & Integritas:** Tidak ada manipulasi data; tanggal grafik dihitung murni dari tanggal terbit asli berita (`published_at`).
+
+---
+
+### 4. Persona Pengguna & Alur Akses (User Personas)
+| Persona | Hak Akses & URL | Kebutuhan Utama |
 | :--- | :--- | :--- |
-| **Pimpinan Daerah (Bupati/Walikota/Sekda)** | *Executive Decision Maker* | Barometer sentimen publik harian, indeks kepuasan per OPD, ringkasan eksekutif 3 poin otomatis, sinyal krisis. |
-| **Kepala & Tim Humas Diskominfo** | *Crisis & Issue Handler* | Dashboard interaktif real-time, monitoring sentimen berita & komentar, early warning via bot Telegram, deteksi buzzer/bot. |
-| **Pimpinan OPD (Kadis PUPR, Dinkes, dll.)** | *Action Unit* | Matriks komplain spesifik instansinya (misal: jalan rusak, antrean RSUD, pungli bansos) dan lokasi kecamatan terkait. |
-| **Administrator Sistem / Pengembang** | *Technical Operator* | Manajemen sumber data & endpoint dinamis (tambah website/medsos, on/off switch, setting selector, trigger sync manual dengan filter tanggal & limit). |
+| **Bupati / Wakil Bupati / Sekda** | `/dashboard` | Meninjau 4 Master KPI (Volume, NSS, Trust Index, Bot/Anomaly), tren sentimen 12 bulan, evaluasi 4 Program Strategis Nasional (PSN), dan Rapor 10 OPD. |
+| **Kepala & Tim Humas Diskominfo** | `/dashboard` & `/berita` | Memantau isu viral, narasi framing publik, anatomi 6 spektrum emosi, melakukan klik *drilldown* untuk membaca berita asli, dan tombol Tarik Berita. |
+| **Pimpinan OPD (Kadis PUPR, Dinkes, dll.)** | `/opd` & `/berita` | Melihat rapor penerimaan publik instansinya, keluhan spesifik (misal: jalan rusak, antrean RSUD), dan filter wilayah kecamatan terkait. |
+| **Operator Teknis / GIS** | `/peta`, `/sumber`, `/sinkronisasi` | Meninjau peta geospasial 21 kecamatan, memeriksa kesehatan 13 endpoint scraper, audit log sinkronisasi, dan panduan operasional sistem (`/panduan`). |
 
 ---
 
-### 5. Ruang Lingkup Fitur (Functional Requirements)
+### 5. Ruang Lingkup Fitur Nyata (Current Production Features)
 
-#### 5.1 Modul Dynamic Source & Endpoint Management
-* **FR-1.1 CRUD Data Sources:** Mengelola daftar portal berita (nasional, regional, blog warga) dan profil/grup publik media sosial (Facebook, Instagram, TikTok, X).
-* **FR-1.2 Endpoint Configuration:**
-  * Mode Web: URL RSS feed, URL Sitemap, atau URL halaman indeks berita dengan CSS/XPath Selector dinamis (judul, tanggal, isi artikel, pembuat).
-  * Mode Medsos: URL akun/halaman/tagar publik, selector elemen komentar dan postingan.
-* **FR-1.3 Dynamic Toggle (On/Off Switch):** Setiap endpoint memiliki status aktif/nonaktif untuk menghemat sumber daya laptop/server.
-* **FR-1.4 Proxy & Header Customization:** Konfigurasi user-agent rotation dan session header jika diperlukan.
+#### 5.1 Dashboard Eksekutif Komando (`/dashboard` & `/`)
+* **4 Master KPI Cards:**
+  1. *Total Berita Terpublikasi:* Total volume data berita terindeks (2.952 konten).
+  2. *Net Sentiment Score (NSS):* Formula persentase $(Positif - Negatif) / Total \times 100$.
+  3. *Indeks Kepuasan Warga (Trust Index):* Skala 1.0 s.d. 10.0 berdasarkan rasio penerimaan publik.
+  4. *Bot / Anomali Terindikasi:* Deteksi postingan duplikat/sindikasi massal via MinHash LSH.
+* **4 Pilar Monitoring Program Strategis Nasional (PSN):**
+  1. *Program Makan Bergizi Gratis (MBG)* (Badan Gizi Nasional / Kodim 0814 Jombang / Dapur SPPG).
+  2. *Koperasi Desa (Kopdes) & Ketahanan Pangan* (Kemenkop, Bulog, penyerapan gabah lokal).
+  3. *Pemberantasan Korupsi & Penegakan Hukum Daerah* (KPK, Kejari Jombang, pengawasan dana desa).
+  4. *Swasembada Pangan & Alsintan Nasional* (Kementan, BBWS Brantas, pupuk subsidi).
+* **Grafik Tren Sentimen 12 Bulan Terakhir (Chart.js Area Chart):**
+  * Pergerakan kurva Total Volume, Sentimen Positif, dan Sentimen Negatif per bulan berdasarkan tanggal riil terbit berita (`published_at`).
+* **Rapor Kinerja 10 OPD Pemkab Jombang:**
+  * Peringkat instansi berdasarkan volume sebutan media & skor NSS, dilengkapi micro-progress bar proporsi positif/netral/negatif.
+* **Matriks Framing Isu & Aduan Warga:**
+  * 5 Klaster isu: *Infrastruktur & Layanan Publik*, *Kesehatan & Kesejahteraan*, *Pertanian & Ketahanan Pangan*, *Pendidikan & Budaya*, dan *Tata Kelola & Penegakan Hukum*.
+* **Anatomi 6 Spektrum Emosi Publik:**
+  * Donut chart interaktif & breakdown persentase: *Apresiasi/Senang, Harapan/Doa, Kecewa/Frustrasi, Marah/Geram, Sedih/Prihatin, Takut/Cemas*.
+* **AI Executive Digest & Rekomendasi Diskominfo:**
+  * Protokol PDB (*Presidential Daily Brief*) mencakup ringkasan narasi dominan, potensi kerawanan, dan rekomendasi langkah strategis humas.
 
-#### 5.2 Modul Sinkronisasi & Ingestion Kontrol
-* **FR-2.1 Tombol Sinkronisasi Cepat ("Sync Now"):** Eksekusi scraping instan per endpoint atau secara massal (*batch*).
-* **FR-2.2 Filter Rentang Tanggal (Date Range):** Pemilihan rentang tanggal publikasi (`start_date` s.d. `end_date`) sebelum proses pengambilan data.
-* **FR-2.3 Limitasi Data per Endpoint (`max_items`):** Batasan jumlah data maksimal yang ditarik per sesi (contoh: 20, 50, 100, 250 item) agar ramah memori laptop.
-* **FR-2.4 Live Ingestion Progress Bar:** Monitoring progres scraping dan pemrosesan data secara real-time via Server-Sent Events (SSE) / Polling.
+#### 5.2 Pusat Komando Geospasial 21 Kecamatan (`/peta`)
+* **GIS Interaktif Mandiri:** Halaman terpisah khusus peta interaktif Kabupaten Jombang.
+* **21 Poligon Resmi GADM 4.1:** Seluruh batas kecamatan di Kabupaten Jombang terpetakan presisi via GeoJSON lokal offline-ready.
+* **Pewarnaan Sentimen Wilayah (Choropleth):**
+  * *Sangat Kondusif* (Hijau Emerald, NSS $\ge +15\%$).
+  * *Kondusif & Stabil* (Biru Cyan, $0\% \le \text{NSS} < 15\%$).
+  * *Perlu Atensi* (Kuning Amber, $\text{NSS} < 0\%$).
+  * *Rawan Keluhan* (Merah Kirmizi, Rasio Negatif $\ge 40\%$).
+* **Basemap Multi-Layer:** Pilihan basemap *OpenStreetMap*, *Esri Canvas*, dan *Esri Satellite* yang 100% bebas watermark.
+* **Inspektor Wilayah Terpilih (HUD):** Panel info detail statistik saat kecamatan diklik, dilengkapi rekomendasi respon dan tombol drilldown artikel kecamatan.
+* **Leaderboard 21 Kecamatan:** Peringkat kecamatan berdasarkan volume berita, tingkat keluhan, dan sentimen positif.
 
-#### 5.3 Modul Preprocessing & NLP Mandiri (Self-Hosted)
-* **FR-3.1 Data Deduplication (MinHash LSH):** Mendeteksi dan mengelompokkan berita sindikasi yang disalin persis ke banyak portal media lokal agar tidak membiaskan sentimen.
-* **FR-3.2 Kamus Slang & Bahasa Daerah:** Normalisasi kata tidak baku (misal: *"gak", "bgt", "dalan ajur", "suwun", "ngelu"*) ke format standar.
-* **FR-3.3 Emoji Sentiment Converter:** Mengonversi emoji menjadi makna emosional teks dalam bahasa Indonesia (misal: 😡 $\rightarrow$ `[marah]`, 👍 $\rightarrow$ `[setuju]`).
-* **FR-3.4 Klasifikasi Sentimen 3-Kelas:** Menggunakan model lokal fine-tuned `IndoBERT` untuk menentukan label (Positif, Netral, Negatif) serta skor keyakinan (-1.00 s.d. +1.00).
-* **FR-3.5 Aspect-Based Sentiment Analysis (ABSA):** Memetakan sentimen spesifik ke instansi/OPD terkait dalam satu kalimat yang multi-isu.
-* **FR-3.6 Emotion Analysis 6-Kelas:** Klasifikasi emosi (*Marah, Kecewa, Takut, Sedih, Apresiasi/Senang, Harapan*).
-* **FR-3.7 Geotagging & Entity Extraction:** Ekstraksi otomatis nama kecamatan/kelurahan/jalan dari teks untuk pemetaan spasial.
+#### 5.3 Modal Drilldown Berita Interaktif Global (`/api/drilldown-articles`)
+* Mengizinkan pimpinan mengklik kartu PSN, baris OPD, matriks framing isu, irisan emosi, maupun poligon kecamatan untuk membuka daftar berita terkait secara *real-time*.
+* Menampilkan judul artikel, cuplikan isi teks, badge sentimen, label emosi, nama portal media, tanggal rilis, dan tautan langsung ke artikel asli.
+* Dilengkapi kolom pencarian instan (*live search*) di dalam modal.
 
-#### 5.4 Modul Analitika & Visualisasi "Data Berbicara"
-* **FR-4.1 Net Sentiment Score (NSS) Barometer:** Metrik utama persepsi warga ($NSS = \%Positif - \%Negatif$).
-* **FR-4.2 Sentiment & Volume Timeline:** Grafik area interaktif membandingkan fluktuasi sentimen terhadap volume percakapan.
-* **FR-4.3 OPD Performance Matrix:** Matriks komparasi rasio kepuasan warga antar dinas/instansi.
-* **FR-4.4 Geospatial Heatmap:** Peta interaktif wilayah (Kecamatan/Kelurahan) dengan gradasi warna sentimen dan jumlah keluhan (Leaflet GeoJSON).
-* **FR-4.5 Emotion Hexagon Radar:** Grafik radar emosi warga untuk membaca psikologi massa.
-* **FR-4.6 N-Gram Topic & Word Cloud:** Visualisasi kata kunci keluhan dan apresiasi yang paling sering muncul.
-* **FR-4.7 Deteksi Buzzer vs. Warga Organik:** Analisis duplikasi komentar dan pola anomali waktu.
-* **FR-4.8 AI Executive Summary:** Ringkasan narasi 3 poin harian (ekstraksi poin utama & rekomendasi humas).
+#### 5.4 Katalog Berita & Opini (`/berita`)
+* Pencarian teks bebas (judul, isi, penulis).
+* Filter ruang lingkup: *Semua*, *Lokal Pemkab*, dan *Strategis Nasional*.
+* Filter sentimen: *Semua*, *Positif*, *Netral*, *Negatif*.
+* Filter instansi/OPD terkait.
+* Paginasi 15 item/halaman dengan tautan eksternal ke sumber asli.
 
-#### 5.5 Modul Early Warning & Krisis Alerting
-* **FR-5.1 Threshold Engine:** Pemicu alert otomatis ketika sentimen negatif pada topik tertentu melonjak melebihi ambang batas.
-* **FR-5.2 Self-Hosted Notification Delivery:** Pengiriman notifikasi darurat instan ke bot Telegram Pemda atau webhook WhatsApp lokal.
+#### 5.5 Manajemen Sumber & Endpoint (`/sumber`)
+* Daftar portal media (Radar Jombang, Kabar Jombang, Beritajatim, Detik Jatim, Antara Jatim, Google News Aggregator).
+* 13 Endpoint scraper aktif dengan konfigurasi parser RSS, Trafilatura, dan Playwright.
+
+#### 5.6 Siklus Pembaruan Data (`/sinkronisasi` & `/panduan`)
+* **Tarik Berita Baru (*Incremental Sync*):** Menarik berita teranyar tanpa menghapus data lama via perintah `php artisan sismantik:sync --max=20`.
+* **Replace Data Total (*Full Re-ingest*):** Mengosongkan data lama dan menarik ulang data segar 12 bulan terakhir via `php artisan sismantik:replace-total --months=12 --max-per-month=1000 --confirm=yes` dengan modal konfirmasi keamanan.

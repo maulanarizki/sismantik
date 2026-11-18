@@ -1,117 +1,119 @@
-# TECH STACK ARCHITECTURE (LOCAL NATIVE & MYSQL)
-## Proyek: SISMANTIK (Lingkungan Laptop Lokal - Non-Docker)
+# TECH STACK ARCHITECTURE & ENVIRONMENT SPECIFICATION
+## Proyek: SISMANTIK PRO (Native Local Linux Environment - Non-Docker)
 
-Sistem ini dikonfigurasi untuk berjalan **100% secara langsung di lingkungan lokal laptop (*Native Host Environment*)** tanpa menggunakan Docker, memanfaatkan software yang telah terpasang di sistem (PHP 8.4, Composer 2.8, Python 3.13, MySQL 8, Redis, dan Node.js 24).
+SISMANTIK PRO dikonfigurasi untuk berjalan **100% secara langsung di lingkungan lokal (*Native Host Environment*)** tanpa menggunakan Docker, memanfaatkan software yang telah terpasang di sistem operasi Linux: PHP 8.4, Composer 2.8, Python 3.13, MariaDB 11.8 / MySQL 8, Redis 7, dan Node.js 24.
 
 ---
 
-### 1. Konfigurasi Lingkungan Lokal (Target Laptop)
+### 1. Spesifikasi Server & Lingkungan Lokal
 
-* **Operating System:** Linux (Debian/Ubuntu Kernel)
-* **Koneksi Database MySQL Lokal:**
+* **Operating System:** Linux (Kernel 6.x / Debian/Ubuntu-based)
+* **Koneksi Database MySQL / MariaDB Lokal:**
   * **Host:** `127.0.0.1`
   * **Port:** `3306`
   * **User:** `dev`
   * **Password:** `mbg`
   * **Database:** `hantu`
   * **Charset:** `utf8mb4` / `utf8mb4_unicode_ci`
-* **Message Broker:** Redis Server Lokal (`127.0.0.1:6379`)
-* **Spesifikasi Perangkat Keras:** 12 CPU Cores, 16 GB RAM (Optimasi CPU-Threaded Inference)
+* **Message Broker & Cache:** Redis Server Lokal (`127.0.0.1:6379`)
+* **Spesifikasi Perangkat:** 12 CPU Threads, 16 GB RAM (Optimasi CPU-Threaded Multi-Core Inference)
+* **Alamat Port Layanan:**
+  * **Web Portal & Executive Dashboard:** `http://127.0.0.1:8000`
+  * **Python NLP & Scraping Microservice:** `http://127.0.0.1:8001`
 
 ---
 
-### 2. Diagram Alur Arsitektur Native
+### 2. Diagram Alur Arsitektur Sistem Terpasang
 
 ```
-+-------------------------------------------------------------------------------+
-|                    CORE WEB & ADMIN DASHBOARD (PHP 8.4)                       |
-|   Laravel 11 | FilamentPHP v3 | Livewire 3 | Tailwind CSS | Apache ECharts    |
-|               Berjalan via: php artisan serve (Port 8000)                     |
-+-------------------------------------------------------------------------------+
-                                     |
-                       REST / Redis Queue (Port 6379)
-                                     |
-+-------------------------------------------------------------------------------+
-|                 SCRAPING & INGESTION SERVICE (Python 3.13)                    |
-|          FastAPI | Trafilatura | Playwright Stealth | BeautifulSoup4          |
-|                 Feedparser | Custom Social Media Worker                       |
-|                 Berjalan via: uvicorn (Port 8001 / venv)                      |
-+-------------------------------------------------------------------------------+
-                                     |
-                          Asynchronous Pipeline
-                                     |
-+-------------------------------------------------------------------------------+
-|                   LOCAL NLP & SENTIMENT ENGINE (PyTorch CPU)                  |
-|          Hugging Face Transformers | IndoBERT-base-p1 (SmSA fine-tuned)       |
-|          ABSA Engine | Kamus Slang & Dialek Lokal | Demoji | MinHash LSH      |
-|               Dioptimasi untuk Multi-Core CPU (12 Threads)                    |
-+-------------------------------------------------------------------------------+
-                                     |
-                         Database & Message Storage
-                                     |
-+-------------------------------------------------------------------------------+
-|                         STORAGE & BROKER LAYER                                |
-|        MySQL 8.x (127.0.0.1:3306 | db: hantu | user: dev)                     |
-|        Redis 7.x (127.0.0.1:6379 | cache, queue & pubsub)                     |
-+-------------------------------------------------------------------------------+
++---------------------------------------------------------------------------------------+
+|                 SISMANTIK EXECUTIVE COMMAND CENTER (PORT 8000)                        |
+|                                                                                       |
+|   Framework: PHP 8.4 + Laravel 11                                                     |
+|   Frontend : Tailwind CSS (CDN/Custom Dark Mode) + Alpine.js v3.14 (Reactivity)       |
+|   Grafik   : Chart.js v4 (12-Month Timeline Area Chart & 6-Emotion Donut Chart)       |
+|   Peta GIS : Leaflet.js v1.9 (Local Asset) + 21 Poligon GADM 4.1 Kab. Jombang         |
+|   Basemap  : OpenStreetMap Standard & Esri World Imagery (Zero Watermark / No API Key)|
+|   Desain   : 100% Custom Bespoke UI (High Contrast, Light/Dark Switcher, Zero Filament|
++---------------------------------------------------------------------------------------+
+                                           |
+                          HTTP REST JSON (`POST /api/...`)
+                                           |
++---------------------------------------------------------------------------------------+
+|             PYTHON NLP & SCRAPING SERVICE (PORT 8001 / venv)                          |
+|                                                                                       |
+|   Framework: Python 3.13 + FastAPI + Uvicorn (Worker Background)                      |
+|   Model    : IndoBERT Multi-Aspect + VADER Sentiment Engine (CPU Multi-Thread 12 Core)|
+|   Emosi    : 6 Klasifikasi Diskrit (Apresiasi, Harapan, Kecewa, Marah, Sedih, Takut)   |
+|   Deduplikasi: MinHash LSH (datasketch) & Deteksi Buzzer/Bot                          |
+|   Scraper  : Trafilatura, Feedparser (RSS), Playwright Stealth                        |
++---------------------------------------------------------------------------------------+
+                                           |
+                                  SQL / ORM Query
+                                           |
++---------------------------------------------------------------------------------------+
+|                              BASIS DATA & STORAGE LAYER                               |
+|                                                                                       |
+|   MySQL/MariaDB : `hantu` @ 127.0.0.1:3306 (user: dev, pass: mbg)                     |
+|                   2.952 Berita Terindeks, 2.952 Hasil Sentimen, 14 Topik/OPD,         |
+|                   13 Endpoint Scraper, Riwayat Sinkronisasi                           |
+|   Redis Server  : 127.0.0.1:6379 (Session, Cache, Queue Driver)                       |
++---------------------------------------------------------------------------------------+
 ```
 
 ---
 
-### 3. Rincian Komponen Teknologi
+### 3. Rincian Komponen Teknologi Aktual
 
-#### A. Core Web, Admin Panel & Dashboard
+#### A. Core Web & Executive Command Center (`core-web/`)
 * **Framework:** **PHP 8.4 + Laravel 11**
-  * Koneksi native ke MySQL melalui driver `pdo_mysql`.
-  * Antrean job background menggunakan Laravel Queue dengan driver `redis`.
-* **Admin & Dashboard Engine:** **FilamentPHP v3**
-  * Resource-based panel untuk manajemen sumber data dan endpoint dinamis.
-  * Form builder dinamis dengan toggle On/Off instan.
-  * Modal Action terintegrasi untuk pemicu *Sync Now* (rentang tanggal & limit data).
-* **Komponen Reaktif:** **Laravel Livewire 3 + Alpine.js**
-  * Memberikan antarmuka reaktif tanpa beban berat framework JS terpisah.
-* **Visualisasi Grafik:** **Apache ECharts**
-  * Visualisasi barometer *Net Sentiment Score* (NSS), grafik tren volume, radar emosi 6 sumbu, dan word cloud.
-* **Peta Geospasial:** **Leaflet.js**
-  * Merender peta vektor batas kecamatan GeoJSON lokal secara offline/mandiri.
+  * Routing terpusat di `routes/web.php` dengan alias otomatis untuk rute `/admin/*` $\rightarrow$ `/dashboard`.
+  * Middleware pengecualian CSRF token untuk rute AJAX interaktif (`/api/*` dan `/action/*`).
+* **Frontend UI & Styling:**
+  * **Tailwind CSS:** Dikonfigurasi dengan mode gelap (*dark mode class*) dan palet warna kontras tinggi (*slate-900*, *emerald-500*, *cyan-500*, *amber-500*, *rose-500*). Tidak ada lagi teks transparan/pudar (*bleached text*).
+  * **Alpine.js v3.14.8:** Mengelola *state reactive* di sisi klien (jam digital real-time WIB, switcher tema, modal konfirmasi Replace Total, dan modal drilldown berita).
+* **Visualisasi Grafik Data:**
+  * **Chart.js v4:** Merender kurva tren sentimen 12 bulan terakhir (area chart) dan donat spektrum emosi dengan animasi halus dan rendering tajam di layar resolusi tinggi.
+* **Geospatial GIS:**
+  * **Leaflet.js:** Asset lokal mandiri di `public/vendor/leaflet/leaflet.js` & `leaflet.css` sehingga dapat beroperasi tanpa ketergantungan koneksi CDN luar.
+  * **Basemap Tile Server:** Menggunakan OpenStreetMap (`https://tile.openstreetmap.org/{z}/{x}/{y}.png`) dan Esri World Imagery/Canvas. **Tidak lagi menggunakan CartoDB**, sehingga bersih dari watermark *"API KEY REQUIRED"*.
+  * **GeoJSON Poligon 21 Kecamatan:** Tersimpan di `public/geojson/jombang_kecamatan.geojson` (132.9 KB), mencakup seluruh 21 kecamatan resmi Kabupaten Jombang.
 
-#### B. Scraping & Ingestion Service
-* **Runtime:** **Python 3.13 (Virtual Environment `venv`)**
-* **API Service:** **FastAPI + Uvicorn**
-  * Menjalankan microservice scraping di `127.0.0.1:8001`.
-* **Ekstraktor Berita Web Cepat:** **Trafilatura**
-  * Pustaka terbaik untuk ekstraksi artikel utama web secara otomatis tanpa iklan/sidebar.
-* **Headless Browser (Dynamic Sites):** **Playwright Python + playwright-stealth**
-  * Digunakan untuk situs berita yang membutuhkan render JavaScript atau media sosial publik.
-* **RSS & Feed Parser:** **Feedparser**
-  * Mengambil feed berkala dengan konsumsi bandwidth dan CPU yang sangat minim.
+#### B. NLP & Scraping Microservice (`engine-nlp/`)
+* **Runtime:** **Python 3.13** dalam Virtual Environment terisolasi (`engine-nlp/venv/`).
+* **API Service:** **FastAPI + Uvicorn** berjalan pada `127.0.0.1:8001`.
+* **Arsitektur Model NLP:**
+  * **IndoBERT Multi-Aspect Classifier:** Menghasilkan skor polaritas (Positif, Netral, Negatif).
+  * **VADER Lexicon Fallback & Emoticon Converter (`demoji`):** Menganalisis sentimen dari ragam bahasa gaul dan emoji.
+  * **Kamus Normalisasi Slang Jawa/Sunda:** Mengubah kata tidak baku seperti *"gak", "dalan ajur", "rusak parah"* ke makna standar.
+  * **MinHash LSH (`datasketch`):** Menghitung nilai hash Jaccard untuk menyaring konten sindikasi/duplikat massal.
+* **Ekstraktor Teks Berita:**
+  * **Trafilatura:** Mengekstraksi artikel berita dari HTML mentah tanpa gangguan iklan, navigasi, atau banner.
+  * **Feedparser:** Mengurai RSS feed portal media nasional dan Google News Aggregator secara berkala.
 
-#### C. Local NLP & Machine Learning Engine (Dioptimasi untuk CPU Laptop)
-* **Framework:** **PyTorch 2.x (CPU Build dengan dukungan AVX2 / OpenMP)**
-  * Dikonfigurasi dengan `torch.set_num_threads(8)` untuk memanfaatkan 12-core laptop secara efisien tanpa membuat sistem freeze.
-* **Model Sentimen Bahasa Indonesia:** **`indobenchmark/indobert-base-p1`**
-  * Model diunduh dan disimpan di folder lokal `engine-nlp/models/indobert-sentiment/`.
-  * Menghasilkan probabilitas: Positif, Netral, Negatif.
-* **Aspect-Based Sentiment Analysis (ABSA):**
-  * Memetakan sentimen spesifik per dinas/OPD berdasarkan pencocokan entitas dan kamus topik di MySQL.
-* **Modul Preprocessing Mandiri:**
-  * Kamus slang & bahasa daerah lokal (Jawa/Sunda) format JSON.
-  * `demoji` untuk konversi emoji teks.
-  * `datasketch` (MinHash LSH) untuk deteksi duplikasi berita massal.
-
-#### D. Database & Broker
-* **Database Relasional:** **MySQL 8.x**
-  * Menggunakan database `hantu` pada `127.0.0.1:3306`.
-  * Tipe data `JSON` untuk konfigurasi selector, atribut fleksibel, dan metadata engagement.
-  * Indeks `FULLTEXT` pada judul dan isi konten untuk fitur pencarian teks instan tanpa memerlukan Elasticsearch eksternal.
-* **Message Broker & Cache:** **Redis 7.x**
-  * Mengelola antrean penarikan data dan pertukaran status job antara Laravel dan Python.
+#### C. Daftar Controller & Rute Sistem Terpasang
+| Controller | Rute URL | Fungsi Utama |
+| :--- | :--- | :--- |
+| `DashboardController` | `GET /` & `GET /dashboard` | Mengagregasi 4 Master KPI, 4 PSN cards, tren sentimen 12 bulan, 10 rapor OPD, matriks framing, 6 emosi, dan PDB AI. |
+| `GeospatialController` | `GET /peta` | Menghitung statistik sentimen 21 kecamatan, passing GeoJSON, leaderboard, dan inspector HUD. |
+| `RawContentController` | `GET /berita` | Menampilkan katalog arsip berita dengan filter pencarian, scope, sentimen, dan paginasi. |
+| `TopicAgencyController`| `GET /opd` & `POST /opd/{id}/toggle` | Direktori 10 OPD Pemkab Jombang + PSN, daftar kata kunci, dan tombol On/Off status aktif. |
+| `SourceController` | `GET /sumber` | Daftar portal media dan 13 endpoint scraper. |
+| `SyncJobController` | `GET /sinkronisasi` | Log audit sesi sinkronisasi data, durasi proses, dan status. |
+| `GuideController` | `GET /panduan` | SOP operasional, alur scraping, dan petunjuk pemulihan data total. |
+| `ActionController` | `POST /action/sync` | Trigger penarikan berita inkremental (`sismantik:sync --max=20`). |
+| `ActionController` | `POST /action/replace-total` | Trigger pembersihan data & penarikan ulang 12 bulan (`sismantik:replace-total`). |
+| `ActionController` | `POST /api/drilldown-articles` | Endpoint JSON penyedia artikel berita untuk modal drilldown interaktif. |
+| *Route Redirector* | `GET /admin/*` | Mengalihkan URL lama Filament secara otomatis (*302 Found*) ke antarmuka baru. |
 
 ---
 
-### 4. Mengapa Pendekatan Native Local Ini Sangat Tepat untuk Laptop Anda?
-
-1. **Hemat Memori:** Menghilangkan overhead memori Docker daemon, container virtualization, dan bridge network (menghemat ~2–4 GB RAM laptop).
-2. **Setup Cepat & Langsung Nyambung:** Database MySQL `hantu` dan user `dev` sudah aktif dan siap digunakan secara langsung.
-3. **Fleksibilitas Debugging:** Kode Laravel dan Python dapat di-edit langsung dengan reload seketika (*hot-reload*) tanpa proses `docker compose build`.
-4. **Performa Maksimal:** Eksekusi langsung di atas CPU host 12-core memberikan kecepatan inferensi PyTorch dan penarikan Trafilatura yang optimal.
+### 4. Skrip Startup Mandiri (`start_sismantik.sh`)
+Sistem dilengkapi skrip peluncur satu pintu:
+```bash
+./start_sismantik.sh
+```
+Skrip ini secara otomatis:
+1. Memverifikasi konektivitas MySQL `hantu` dan Redis `127.0.0.1:6379`.
+2. Menjalankan Python FastAPI Microservice di port 8001 (jika belum aktif).
+3. Menjalankan server Laravel Web di port 8000.

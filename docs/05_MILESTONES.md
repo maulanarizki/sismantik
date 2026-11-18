@@ -1,139 +1,57 @@
-# MILESTONES & IMPLEMENTATION ROADMAP (LOCAL NATIVE EXECUTION)
-## Proyek: SISMANTIK (Lingkungan Laptop Lokal - Non-Docker)
-
-Roadmap implementasi ini disesuaikan untuk dieksekusi secara **langsung di mesin laptop lokal** tanpa Docker. Semua dependensi memanfaatkan software yang sudah aktif (PHP 8.4, Composer 2.8, Python 3.13, MySQL 8, Redis, Node.js 24).
+# MILESTONES & IMPLEMENTATION LOG
+## Proyek: SISMANTIK PRO (Status Implementasi Riil Sistem)
 
 ---
 
-### Timeline & Pembagian Sprint (Total 6 Fase)
+### 1. Ringkasan Status & Pencapaian Roadmap
 
-| Fase | Fokus Utama | Target Luaran (Key Deliverables) |
-| :--- | :--- | :--- |
-| **Fase 0** | Fondasi Proyek & Database MySQL | Setup Laravel 11 di workspace, config `.env` MySQL `hantu`, setup Filament v3, migrasi DDL, dan inisialisasi Python 3.13 venv. |
-| **Fase 1** | Dynamic Sources & Sync Controller | CRUD Sumber Data & Endpoints, Toggle On/Off dinamis, UI Modal Sinkronisasi (*Date Range* & *Max Limit*). |
-| **Fase 2** | Python Scraping Service & Redis Worker | Service FastAPI (`:8001`), modul Trafilatura, Feedparser, Playwright Stealth, dan integrasi Laravel Queue. |
-| **Fase 3** | Local NLP Engine (IndoBERT CPU) | Unduh bobot IndoBERT lokal, modul normalisasi dialek/slang lokal, ABSA per dinas/OPD, dan MinHash deduplikasi. |
-| **Fase 4** | Visualisasi Eksekutif "Data Berbicara" | Widget Barometer NSS, Radar Emosi 6-Sumbu ECharts, OPD Scorecard, dan Leaflet GeoJSON Heatmap Kecamatan. |
-| **Fase 5** | Deteksi Buzzer, Alerting & UAT | Audit pola komentar duplikat/anomali, Bot Telegram / WhatsApp alerting, uji alur menyeluruh di laptop. |
-
----
-
-### Rincian Rencana Tindakan per Fase
-
-#### Fase 0: Inisialisasi Proyek & Migrasi Basis Data MySQL (Target: Hari 1-2)
-* **Langkah Teknis:**
-  1. Inisialisasi proyek Laravel 11 di direktori kerja:
-     ```bash
-     composer create-project laravel/laravel core-web
-     ```
-  2. Konfigurasi file `core-web/.env`:
-     ```ini
-     DB_CONNECTION=mysql
-     DB_HOST=127.0.0.1
-     DB_PORT=3306
-     DB_DATABASE=hantu
-     DB_USERNAME=dev
-     DB_PASSWORD=mbg
-     QUEUE_CONNECTION=redis
-     ```
-  3. Instalasi **FilamentPHP v3**:
-     ```bash
-     composer require filament/filament:"^3.2" -W
-     php artisan filament:install --panels
-     ```
-  4. Pembuatan file migrasi database sesuai spesifikasi DDL MySQL (`sources`, `source_endpoints`, `sync_jobs`, `topics_or_agencies`, `raw_contents`, `sentiment_results`, `aspect_sentiments`, dll.) dan eksekusi `php artisan migrate`.
-  5. Inisialisasi Python Virtual Environment untuk microservice:
-     ```bash
-     python3 -m venv engine-nlp/venv
-     source engine-nlp/venv/bin/activate
-     pip install fastapi uvicorn trafilatura playwright feedparser torch transformers datasketch demoji
-     playwright install chromium
-     ```
-* **Checkpoint Keberhasilan:**
-  * Tabel-tabel terbentuk sempurna di database MySQL `hantu`.
-  * Panel Filament terbuka di `http://127.0.0.1:8000/admin` dengan akun administrator.
+| Fase | Fokus Pengembangan | Status | Target Luaran Terpasang |
+| :--- | :--- | :---: | :--- |
+| **Fase 0** | Fondasi Proyek & Database MySQL | **SELESAI (100%)** | Setup Laravel 11, MariaDB/MySQL `hantu` (`127.0.0.1:3306`), Redis (`127.0.0.1:6379`), dan inisialisasi Python 3.13 venv. |
+| **Fase 1** | Dynamic Sources & Endpoint Management | **SELESAI (100%)** | 6 Portal sumber media (Radar Jombang, Kabar Jombang, Beritajatim, Detik, Antara, Google News) dan 13 endpoint scraper. |
+| **Fase 2** | Scraping Engine Asinkron | **SELESAI (100%)** | FastAPI microservice (`:8001`), modul Trafilatura, Feedparser RSS, dan integrasi penarikan data berbasis tanggal publikasi asli. |
+| **Fase 3** | Local NLP Engine & Geotagging | **SELESAI (100%)** | Inferensi IndoBERT multi-aspek, VADER fallback, klasifikasi 6 spektrum emosi diskrit, normalisasi dialek lokal, dan ekstraksi 21 kecamatan. |
+| **Fase 4** | Redesain Total: Executive Command Center | **SELESAI (100%)** | Melepas Filament, membangun antarmuka murni Laravel Blade + Tailwind + Alpine.js + Chart.js, kontras tinggi (*zero bleached text*), dan 1-klik Dark/Light toggle. |
+| **Fase 5** | Pusat Komando GIS 21 Kecamatan Mandiri | **SELESAI (100%)** | Pemisahan rute `/peta`, 21 poligon resmi GADM 4.1 Kab. Jombang, basemap OpenStreetMap & Esri World Imagery (**100% bebas watermark CartoDB**), Inspector HUD, dan Leaderboard. |
+| **Fase 6** | Dataset 12 Bulan & Global Article Drilldown | **SELESAI (100%)** | 2.952 berita terkurasi 12 bulan, modal drilldown berita interaktif global (`/api/drilldown-articles`), perintah `sismantik:replace-total` & `sismantik:sync`. |
 
 ---
 
-#### Fase 1: Manajemen Sumber Data & Endpoint Dinamis (Target: Hari 3-5)
-* **Langkah Teknis:**
-  1. Pembuatan Filament Resources:
-     * `SourceResource` (Nama media, tipe platform web/medsos, base URL, interval sinkronisasi, toggle On/Off).
-     * `SourceEndpointResource` (URL spesifik, tipe parser: RSS / Trafilatura / Playwright, JSON selector config, max limit default, toggle On/Off).
-     * `TopicOrAgencyResource` (Daftar OPD, alias, kata kunci isu).
-  2. Implementasi **Action Modal "Sinkronisasi Sekarang"**:
-     * Field *Date Range Picker* (`start_date` s.d. `end_date`).
-     * Field *Number Input* (`max_items`, default: 50).
-     * Checkbox pilihan sumber (Semua sumber aktif vs spesifik).
-  3. Pembuatan seeder data awal: 5 portal berita lokal/nasional, 3 akun medsos humas, dan 5 dinas utama (Dinas PUPR, Dinkes, Disdik, Disdukcapil, Dishub).
-* **Checkpoint Keberhasilan:**
-  * Pengguna dapat menambah, mengedit, dan mematikan/menyalakan target endpoint secara instan melalui tabel UI.
-  * Modal sinkronisasi berhasil memvalidasi input tanggal dan batas jumlah data.
+### 2. Log Catatan Teknis Tiap Fase
 
----
+#### Fase 0: Fondasi Mesin Lokal & Basis Data
+* Berhasil mengonfigurasi database `hantu` pada MariaDB 11.8 dengan kredensial `user: dev`, `pass: mbg`.
+* Menyiapkan tabel-tabel terstruktur dengan engine InnoDB dan collation `utf8mb4_unicode_ci`.
+* Memverifikasi Redis 7 lokal pada port `6379` untuk session dan caching.
 
-#### Fase 2: Scraping Engine Asinkron & Integrasi Redis (Target: Pekan 2)
-* **Langkah Teknis:**
-  1. Membangun aplikasi FastAPI di `engine-nlp/main.py`:
-     * Endpoint `POST /api/scrape`: Menerima konfigurasi endpoint, rentang tanggal, dan batas data.
-     * Ekstraktor Trafilatura untuk berita web reguler.
-     * Ekstraktor Feedparser untuk RSS feeds.
-     * Ekstraktor Playwright Stealth untuk web dinamis.
-  2. Implementasi Laravel Job `DispatchScrapeJob`:
-     * Dikirim ke antrean Redis `scraping_tasks`.
-     * Mengambil konten dan menyimpannya ke tabel `raw_contents`.
-  3. Sistem *Progress Tracker*: Memperbarui status di tabel `sync_jobs` secara berkala sehingga pengguna di dashboard dapat melihat perkembangan penarikan data.
-* **Checkpoint Keberhasilan:**
-  * Klik "Sinkronisasi Sekarang" berhasil menarik puluhan artikel/komentar aktual dalam kurun tanggal yang ditentukan tanpa error.
-  * Teks artikel berita otomatis tersaring bersih dari iklan dan navigasi situs.
+#### Fase 1 & 2: Ingestion & Scraping Massal
+* Menghubungkan 13 target endpoint, mencakup RSS feed portal terakreditasi dan query terfokus Google News Aggregator untuk isu Kabupaten Jombang.
+* Menerapkan sanitasi HTML otomatis dengan Trafilatura guna mengekstrak teks berita bersih dari iklan dan widget portal.
 
----
+#### Fase 3: NLP Multi-Aspek & Deteksi Entitas Wilayah
+* Mengimplementasikan analisis sentimen 3-kelas (Positif, Netral, Negatif).
+* Mengintegrasikan klasifikasi 6 spektrum emosi: *Apresiasi, Harapan, Kecewa, Marah, Sedih, Takut*.
+* Menambahkan kamus normalisasi istilah lokal Jawa Timuran (*"dalan ajur", "rusak parah", "tambal sulam", "bapuk"*).
+* Ekstraksi nama wilayah secara otomatis memetakan teks ke 21 kecamatan resmi di Jombang.
 
-#### Fase 3: Local NLP Engine (IndoBERT CPU & Dialek Lokal) (Target: Pekan 3)
-* **Langkah Teknis:**
-  1. Setup inferensi PyTorch CPU untuk model `IndoBERT` sentimen (Positif, Netral, Negatif).
-  2. Pembuatan modul *Text Preprocessor*:
-     * Kamus slang & dialek daerah (Jawa/Sunda) format JSON lokal.
-     * `demoji` untuk konversi emotikon menjadi representasi teks.
-     * MinHash LSH (`datasketch`) untuk menandai berita sindikasi yang duplikat.
-  3. Implementasi Aspect-Based Sentiment Analysis (ABSA):
-     * Memetakan kalimat ke OPD terkait berdasarkan pencocokan kamus `topics_or_agencies.keywords`.
-     * Menghitung sentimen spesifik per dinas.
-  4. Penyimpanan hasil olahan ke tabel `sentiment_results` dan `aspect_sentiments`.
-* **Checkpoint Keberhasilan:**
-  * Kalimat keluhan daerah berhasil dipahami dan dinormalisasi.
-  * Inferensi berjalan cepat di CPU laptop (kecepatan < 100 ms per dokumen dengan optimasi multi-threading).
+#### Fase 4: Transformasi Antarmuka ke Executive Command Center (Bebas Filament)
+* **Masalah Awal:** Tampilan admin panel Filament memiliki teks transparan/pudar (*bleached text*), widget grid yang kaku, dan benturan styling pada mode terang.
+* **Solusi Nyata:**
+  * Melepas ketergantungan tampilan dari Filament bawaan.
+  * Membangun arsitektur frontend kustom menggunakan **Laravel Blade, Tailwind CSS, Alpine.js, dan Chart.js**.
+  * Memberikan kontras teks ultra-tajam (`#0f172a` pada mode terang dan `#ffffff` pada mode gelap).
+  * Menghadirkan tombol pengalih tema instan (*Dark/Light Mode Switcher*) di header.
 
----
+#### Fase 5: Solusi Peta Geospasial & Hilangnya Watermark CartoDB
+* **Masalah Awal:** Basemap CartoDB menampilkan watermark berulang *"API KEY REQUIRED"* di seluruh permukaan peta, dan peta lambat ketika digabung di dashboard utama.
+* **Solusi Nyata:**
+  * Memindahkan modul peta ke halaman mandiri di [`/peta`](http://127.0.0.1:8000/peta).
+  * Mengganti basemap tile ke **OpenStreetMap** dan **Esri World Imagery (Satelit)** yang terbukti stabil, tanpa API key, dan **bersih dari watermark**.
+  * Memuat 21 batas poligon resmi GADM 4.1 dari file lokal `core-web/public/geojson/jombang_kecamatan.geojson`.
+  * Menyediakan Inspector HUD di bawah peta serta Leaderboard 21 kecamatan berdasarkan total volume, tingkat keluhan, dan sentimen positif.
 
-#### Fase 4: Visualisasi Eksekutif "Data Berbicara" (Target: Pekan 4)
-* **Langkah Teknis:**
-  1. Pembuatan Widget Dashboard Filament dengan Apache ECharts:
-     * **Barometer Net Sentiment Score (NSS):** Menampilkan skor persepsi publik secara grafis.
-     * **Volume vs Sentiment Dual-Axis:** Grafik area pergerakan isu harian.
-     * **Emotion Hexagon Radar:** 6 sumbu emosi psikologi massa (*Marah, Kecewa, Takut, Sedih, Apresiasi, Harapan*).
-     * **OPD Scorecard:** Bar chart komparasi kepuasan per dinas.
-  2. Integrasi **Peta Geospasial Leaflet.js**:
-     * Memuat file GeoJSON batas wilayah kecamatan/kelurahan.
-     * Pewarnaan poligon wilayah sesuai intensitas sentimen negatif.
-  3. Halaman *Content Explorer* dengan pencarian cepat `FULLTEXT` MySQL.
-* **Checkpoint Keberhasilan:**
-  * Tampilan dashboard menarik, profesional, dan responsif.
-  * Data langsung menceritakan isu utama, dinas yang disorot, dan kecamatan yang membutuhkan tindakan pimpinan.
-
----
-
-#### Fase 5: Deteksi Buzzer, Alerting & UAT (Target: Pekan 5)
-* **Langkah Teknis:**
-  1. Modul deteksi anomali buzzer:
-     * Menghitung kemiripan teks komentar di media sosial (> 90%) untuk mendeteksi pesan copy-paste terkoordinasi.
-     * Menandai konten di tabel `raw_contents.is_suspected_bot`.
-  2. Sistem Early Warning:
-     * Cron scheduler memeriksa lonjakan sentimen negatif $> 40\%$ dalam 2 jam terakhir.
-     * Integrasi notifikasi darurat via Bot Telegram Pemda.
-  3. Ringkasan Eksekutif Harian:
-     * Ekstraksi 3 poin isu terpenting hari ini ke tabel `ai_executive_summaries`.
-  4. Uji alur menyeluruh (*end-to-end testing*) di laptop lokal.
-* **Checkpoint Keberhasilan:**
-  * Seluruh sistem berjalan stabil secara lokal.
-  * Siap digunakan langsung untuk pemantauan opini publik di lingkungan Pemda.
+#### Fase 6: Dataset 12 Bulan, Global Drilldown & Pemulihan Data
+* **Akurasi Waktu:** Tanggal grafik dan filter dihitung berdasarkan `published_at` (tanggal asli saat berita dirilis oleh media), bukan tanggal saat robot scraper mengunduh artikel.
+* **Modal Drilldown Global (`#article-drilldown-modal`):** Pimpinan dapat mengklik kartu PSN, baris OPD, matriks framing isu, spektrum emosi, maupun poligon peta untuk membaca artikel berita aslinya secara lengkap.
+* **Fitur Replace Data Total:** Perintah artisan `sismantik:replace-total` dengan modal konfirmasi keamanan di antarmuka web untuk membersihkan data lama dan menarik ulang data segar 12 bulan terakhir.
+* **Dataset Terverifikasi:** Sistem saat ini aktif dengan **2.952 berita** yang terpetakan rapi di database.
