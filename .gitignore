@@ -1,0 +1,138 @@
+# ==============================================================================
+# SISMANTIK - Media Intelligence Kabupaten Jombang
+# Master Root .gitignore
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. Environment & Credentials (CRITICAL - NEVER COMMIT SECRETS)
+# ------------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+core-web/.env
+core-web/.env.*
+!core-web/.env.example
+engine-nlp/.env
+engine-nlp/.env.*
+!engine-nlp/.env.example
+
+# ------------------------------------------------------------------------------
+# 2. PHP / Laravel (core-web)
+# ------------------------------------------------------------------------------
+vendor/
+core-web/vendor/
+node_modules/
+core-web/node_modules/
+
+# Compiled assets & public storage link
+core-web/public/storage
+core-web/public/hot
+core-web/public/build
+core-web/public/fonts-manifest.dev.json
+
+# Storage keys & pail
+core-web/storage/*.key
+core-web/storage/pail
+
+# Bootstrap compiled cache
+core-web/bootstrap/cache/*.php
+!core-web/bootstrap/cache/.gitignore
+
+# Storage framework cache/views/sessions (keep .gitignore placeholders)
+core-web/storage/framework/cache/data/*
+!core-web/storage/framework/cache/data/.gitignore
+core-web/storage/framework/cache/locks/*
+!core-web/storage/framework/cache/locks/.gitignore
+core-web/storage/framework/sessions/*
+!core-web/storage/framework/sessions/.gitignore
+core-web/storage/framework/views/*
+!core-web/storage/framework/views/.gitignore
+core-web/storage/framework/testing/*
+!core-web/storage/framework/testing/.gitignore
+
+# ------------------------------------------------------------------------------
+# 3. Python & FastAPI Engine (engine-nlp)
+# ------------------------------------------------------------------------------
+venv/
+.venv/
+env/
+ENV/
+engine-nlp/venv/
+engine-nlp/.venv/
+engine-nlp/env/
+engine-nlp/ENV/
+
+# Python bytecode & cache
+__pycache__/
+engine-nlp/__pycache__/
+engine-nlp/*/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Python testing & coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Model downloads & caches
+.cache/
+*.bin
+*.pt
+*.pth
+*.safetensors
+
+# ------------------------------------------------------------------------------
+# 4. Logs & Debugging
+# ------------------------------------------------------------------------------
+*.log
+core-web/storage/logs/*.log
+engine-nlp/uvicorn.log
+
+# ------------------------------------------------------------------------------
+# 5. Database & Dump Files
+# ------------------------------------------------------------------------------
+*.sql.gz
+*.dump
+*.bak
+*.sqlite
+*.sqlite3
+*.db
+# Catatan: hantu.sql (dump database awal ~5.9MB) sengaja diperbolehkan agar
+# repositori memiliki seed dataset lengkap (2.952 berita + sentimen) siap pakai.
+# Jika Anda TIDAK ingin memasukkan dump database ke repo git, hapus tanda '!' di bawah.
+!hantu.sql
+
+# ------------------------------------------------------------------------------
+# 6. IDEs, Editors & OS Artifacts
+# ------------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
+
+# IDE configurations
+.idea/
+.vscode/
+.cursor/
+.codex/
+.nova/
+.zed/
+core-web/.idea/
+core-web/.vscode/
+core-web/.cursor/
+core-web/.codex/
+core-web/.nova/
+core-web/.zed/
+core-web/auth.json
+core-web/.phpunit.result.cache
+core-web/.phpunit.cache
+core-web/.phpactor.json
+core-web/_ide_helper.php
+core-web/Homestead.json
+core-web/Homestead.yaml
+
