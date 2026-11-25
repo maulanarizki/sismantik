@@ -27,7 +27,7 @@ Antarmuka pengguna menggunakan arsitektur **Executive Command Center murni (Lara
 ### 3. Tolok Ukur Keberhasilan (Real KPIs & Status Terkini)
 * **Zero External API Cost:** Biaya operasional lisensi API eksternal = **Rp 0,-**.
 * **Kecepatan Inferensi CPU:** Pemrosesan batch NLP memanfaatkan 12 CPU Cores secara optimal ($\approx 50$ artikel per 5-10 detik).
-* **Dataset Riil Aktif:** Telah memuat dan menganalisis **2.952 berita terkurasi** dalam kurun waktu 12 bulan terakhir seputar Kabupaten Jombang.
+* **Dataset Riil Aktif:** Telah memuat dan menganalisis **3.680 berita terkurasi** dalam kurun waktu 12 bulan terakhir seputar Kabupaten Jombang (2.452 Isu Lokal Pemkab Jombang & 1.228 Program Strategis Nasional).
 * **Basemap GIS Bebas Watermark:** Menggunakan OpenStreetMap dan Esri World Imagery (bebas watermark CartoDB "API KEY REQUIRED").
 * **Akurasi & Integritas:** Tidak ada manipulasi data; tanggal grafik dihitung murni dari tanggal terbit asli berita (`published_at`).
 
@@ -36,10 +36,10 @@ Antarmuka pengguna menggunakan arsitektur **Executive Command Center murni (Lara
 ### 4. Persona Pengguna & Alur Akses (User Personas)
 | Persona | Hak Akses & URL | Kebutuhan Utama |
 | :--- | :--- | :--- |
-| **Bupati / Wakil Bupati / Sekda** | `/dashboard` | Meninjau 4 Master KPI (Volume, NSS, Trust Index, Bot/Anomaly), tren sentimen 12 bulan, evaluasi 4 Program Strategis Nasional (PSN), dan Rapor 10 OPD. |
-| **Kepala & Tim Humas Diskominfo** | `/dashboard` & `/berita` | Memantau isu viral, narasi framing publik, anatomi 6 spektrum emosi, melakukan klik *drilldown* untuk membaca berita asli, dan tombol Tarik Berita. |
+| **Bupati / Wakil Bupati / Sekda** | `/dashboard` | Meninjau 4 Master KPI (Volume, NSS, Trust Index, Bot/Anomaly), tren sentimen 12 bulan, evaluasi 4 Program Strategis Nasional (PSN), Rapor 10 OPD, dan Wordcloud Sentimen. |
+| **Kepala & Tim Humas Diskominfo** | `/dashboard` & `/berita` | Memantau isu viral, narasi framing publik, anatomi 6 spektrum emosi, kata kunci terpopuler dalam sentimen, klik *drilldown* berita, dan tombol Tarik Berita. |
 | **Pimpinan OPD (Kadis PUPR, Dinkes, dll.)** | `/opd` & `/berita` | Melihat rapor penerimaan publik instansinya, keluhan spesifik (misal: jalan rusak, antrean RSUD), dan filter wilayah kecamatan terkait. |
-| **Operator Teknis / GIS** | `/peta`, `/sumber`, `/sinkronisasi` | Meninjau peta geospasial 21 kecamatan, memeriksa kesehatan 13 endpoint scraper, audit log sinkronisasi, dan panduan operasional sistem (`/panduan`). |
+| **Operator Teknis / GIS / Admin Data** | `/peta`, `/stopwords`, `/sumber`, `/sinkronisasi` | Meninjau peta geospasial 21 kecamatan, mengelola database kata henti (*stopwords*), memeriksa kesehatan 13 endpoint scraper, audit log sinkronisasi, dan panduan operasional sistem (`/panduan`). |
 
 ---
 
@@ -47,7 +47,7 @@ Antarmuka pengguna menggunakan arsitektur **Executive Command Center murni (Lara
 
 #### 5.1 Dashboard Eksekutif Komando (`/dashboard` & `/`)
 * **4 Master KPI Cards:**
-  1. *Total Berita Terpublikasi:* Total volume data berita terindeks (2.952 konten).
+  1. *Total Berita Terpublikasi:* Total volume data berita terindeks (3.680 konten).
   2. *Net Sentiment Score (NSS):* Formula persentase $(Positif - Negatif) / Total \times 100$.
   3. *Indeks Kepuasan Warga (Trust Index):* Skala 1.0 s.d. 10.0 berdasarkan rasio penerimaan publik.
   4. *Bot / Anomali Terindikasi:* Deteksi postingan duplikat/sindikasi massal via MinHash LSH.
@@ -58,6 +58,10 @@ Antarmuka pengguna menggunakan arsitektur **Executive Command Center murni (Lara
   4. *Swasembada Pangan & Alsintan Nasional* (Kementan, BBWS Brantas, pupuk subsidi).
 * **Grafik Tren Sentimen 12 Bulan Terakhir (Chart.js Area Chart):**
   * Pergerakan kurva Total Volume, Sentimen Positif, dan Sentimen Negatif per bulan berdasarkan tanggal riil terbit berita (`published_at`).
+* **Pusat Analisis Kata Kunci & Wordcloud Sentimen:**
+  * Tag cloud interaktif dengan 3 bilik klasifikasi: *Sentimen Positif*, *Sentimen Negatif*, dan *Isu Topik Dominan*.
+  * Setiap kata ditampilkan dengan ukuran font proporsional terhadap frekuensi kemunculan (*term frequency*) serta badge jumlah sebutan.
+  * Didukung filtrasi kata henti dinamis dari database untuk membuang kebisingan kata umum, nama daerah, gelar, dan angka.
 * **Rapor Kinerja 10 OPD Pemkab Jombang:**
   * Peringkat instansi berdasarkan volume sebutan media & skor NSS, dilengkapi micro-progress bar proporsi positif/netral/negatif.
 * **Matriks Framing Isu & Aduan Warga:**
@@ -69,14 +73,15 @@ Antarmuka pengguna menggunakan arsitektur **Executive Command Center murni (Lara
 
 #### 5.2 Pusat Komando Geospasial 21 Kecamatan (`/peta`)
 * **GIS Interaktif Mandiri:** Halaman terpisah khusus peta interaktif Kabupaten Jombang.
-* **21 Poligon Resmi GADM 4.1:** Seluruh batas kecamatan di Kabupaten Jombang terpetakan presisi via GeoJSON lokal offline-ready.
-* **Pewarnaan Sentimen Wilayah (Choropleth):**
-  * *Sangat Kondusif* (Hijau Emerald, NSS $\ge +15\%$).
-  * *Kondusif & Stabil* (Biru Cyan, $0\% \le \text{NSS} < 15\%$).
-  * *Perlu Atensi* (Kuning Amber, $\text{NSS} < 0\%$).
-  * *Rawan Keluhan* (Merah Kirmizi, Rasio Negatif $\ge 40\%$).
+* **21 Poligon Resmi GADM 4.1 & Normalisasi Properti:** Seluruh batas kecamatan di Kabupaten Jombang terpetakan presisi via GeoJSON lokal offline-ready menggunakan atribut `district_name` yang dinormalisasi otomatis.
+* **5 Header KPI Teritorial:** Menampilkan Total Berita Teritori, Jumlah Wilayah Sangat Kondusif, Kondusif & Stabil, Perlu Atensi, dan Rawan Keluhan secara live.
+* **Pewarnaan Sentimen Wilayah (Choropleth Terkalibrasi):**
+  * *Sangat Kondusif* (Hijau Emerald `#10b981`, NSS $\ge +15\%$).
+  * *Kondusif & Stabil* (Biru Cyan `#06b6d4`, $0\% \le \text{NSS} < 15\%$).
+  * *Perlu Atensi* (Kuning Amber `#f59e0b`, $-30\% \le \text{NSS} < 0\%$).
+  * *Rawan Keluhan* (Merah Kirmizi `#f43f5e`, Rasio Negatif $\ge 40\%$ atau NSS $< -30\%$).
 * **Basemap Multi-Layer:** Pilihan basemap *OpenStreetMap*, *Esri Canvas*, dan *Esri Satellite* yang 100% bebas watermark.
-* **Inspektor Wilayah Terpilih (HUD):** Panel info detail statistik saat kecamatan diklik, dilengkapi rekomendasi respon dan tombol drilldown artikel kecamatan.
+* **Inspektor Wilayah Terpilih (HUD) & Live Article Feed:** Panel info detail statistik saat kecamatan diklik, dilengkapi rekomendasi respon, statistik persentase sentimen, dan **feed artikel berita interaktif teritorial** yang dapat dibaca dan dibuka langsung.
 * **Leaderboard 21 Kecamatan:** Peringkat kecamatan berdasarkan volume berita, tingkat keluhan, dan sentimen positif.
 
 #### 5.3 Modal Drilldown Berita Interaktif Global (`/api/drilldown-articles`)
@@ -97,4 +102,19 @@ Antarmuka pengguna menggunakan arsitektur **Executive Command Center murni (Lara
 
 #### 5.6 Siklus Pembaruan Data (`/sinkronisasi` & `/panduan`)
 * **Tarik Berita Baru (*Incremental Sync*):** Menarik berita teranyar tanpa menghapus data lama via perintah `php artisan sismantik:sync --max=20`.
-* **Replace Data Total (*Full Re-ingest*):** Mengosongkan data lama dan menarik ulang data segar 12 bulan terakhir via `php artisan sismantik:replace-total --months=12 --max-per-month=1000 --confirm=yes` dengan modal konfirmasi keamanan.
+* **Replace Data Total (*Full Re-ingest*):** Mengosongkan data lama dan menarik ulang data segar 12 bulan terakhir via `php artisan sismantik:replace-total --months=12 --max-per-month=1000 --confirm=yes` dengan modal konfirmasi keamanan. Pada level HTTP controller (`ActionController`), batas waktu eksekusi default 30 detik dinonaktifkan (`set_time_limit(0)`, `ignore_user_abort(true)`) serta dilengkapi indikator loading state interaktif pada antarmuka web guna mencegah interupsi.
+
+#### 5.7 Manajemen Stopwords Database & Filter Kebisingan Teks (`/stopwords`)
+* **CRUD Lengkap Berbasis Database:** Antarmuka web penuh untuk mengelola daftar kata henti (*stopwords*) yang tersimpan di tabel `stopwords` database `hantu`.
+* **6 Kategori Terstruktur:**
+  1. *Daerah:* `kabupaten, jombang, pemkab, pemda, pemerintah, kecamatan, kelurahan, desa, jatim, jawa, timur`.
+  2. *Waktu:* nama hari, nama bulan (penuh & singkatan), waktu hari (`pagi, siang, sore, malam`).
+  3. *Angka:* `ribu, juta, miliar, triliun, persen, rupiah`.
+  4. *Sapaan & Gelar:* `bapak, ibu, pak, bu, mas, mbak, prof, drs, dra, dr, hj`.
+  5. *Aksi Umum:* `gelar, lakukan, melakukan, laksanakan, adakan, hadiri, hadir, mulai`.
+  6. *Umum:* kata tugas bahasa Indonesia standar.
+* **Integrasi Dinamis API:** Menyediakan rute `GET /api/stopwords` untuk dikonsumsi mesin NLP Python dan agregasi frekuensi kata dashboard secara dinamis.
+
+#### 5.8 Kamus Slang & Leksikon Sentimen InSet
+* **Kamus Normalisasi Slang (Ade Arini Putri + Lokal):** Memuat 1.509 lema kata gaul dan singkatan percakapan (`engine-nlp/data/slang.csv`) untuk standarisasi teks opini warga.
+* **InSet Sentiment Lexicon (fajri91/InSet):** Memuat 9.119 kata leksikon berbobot polaritas (`positive.tsv` 3.610 lema, `negative.tsv` 6.610 lema) yang dikonversi dari skala $[-5, +5]$ ke $[-1.0, +1.0]$ untuk mempertajam deteksi sentimen nuansa Indonesia.

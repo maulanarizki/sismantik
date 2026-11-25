@@ -13,7 +13,8 @@
 | **Fase 3** | Local NLP Engine & Geotagging | **SELESAI (100%)** | Inferensi IndoBERT multi-aspek, VADER fallback, klasifikasi 6 spektrum emosi diskrit, normalisasi dialek lokal, dan ekstraksi 21 kecamatan. |
 | **Fase 4** | Redesain Total: Executive Command Center | **SELESAI (100%)** | Melepas Filament, membangun antarmuka murni Laravel Blade + Tailwind + Alpine.js + Chart.js, kontras tinggi (*zero bleached text*), dan 1-klik Dark/Light toggle. |
 | **Fase 5** | Pusat Komando GIS 21 Kecamatan Mandiri | **SELESAI (100%)** | Pemisahan rute `/peta`, 21 poligon resmi GADM 4.1 Kab. Jombang, basemap OpenStreetMap & Esri World Imagery (**100% bebas watermark CartoDB**), Inspector HUD, dan Leaderboard. |
-| **Fase 6** | Dataset 12 Bulan & Global Article Drilldown | **SELESAI (100%)** | 2.952 berita terkurasi 12 bulan, modal drilldown berita interaktif global (`/api/drilldown-articles`), perintah `sismantik:replace-total` & `sismantik:sync`. |
+| **Fase 6** | Dataset 12 Bulan & Global Article Drilldown | **SELESAI (100%)** | 2.952 berita awal, modal drilldown berita interaktif global (`/api/drilldown-articles`), perintah `sismantik:replace-total` & `sismantik:sync`. |
+| **Fase 7** | Pengayaan NLP (InSet & Slang), Wordcloud Sentimen, Stopwords DB, & Kalibrasi GIS | **SELESAI (100%)** | Integrasi 1.509 slang Ade Arini Putri, 9.119 leksikon InSet, modul Wordcloud sentimen & topik di dashboard, CRUD tabel `stopwords` (189 kata), endpoint `/api/stopwords`, fix timeout 30s `replaceTotal`, normalisasi GIS `district_name`, kalibrasi 4 level warna Choropleth, 5 metrik header peta, dan live feed dokumen berita per kecamatan. **Total aktif: 3.680 Berita**. |
 
 ---
 
@@ -54,4 +55,24 @@
 * **Akurasi Waktu:** Tanggal grafik dan filter dihitung berdasarkan `published_at` (tanggal asli saat berita dirilis oleh media), bukan tanggal saat robot scraper mengunduh artikel.
 * **Modal Drilldown Global (`#article-drilldown-modal`):** Pimpinan dapat mengklik kartu PSN, baris OPD, matriks framing isu, spektrum emosi, maupun poligon peta untuk membaca artikel berita aslinya secara lengkap.
 * **Fitur Replace Data Total:** Perintah artisan `sismantik:replace-total` dengan modal konfirmasi keamanan di antarmuka web untuk membersihkan data lama dan menarik ulang data segar 12 bulan terakhir.
-* **Dataset Terverifikasi:** Sistem saat ini aktif dengan **2.952 berita** yang terpetakan rapi di database.
+
+#### Fase 7: Pengayaan NLP, Wordcloud Sentimen, Stopwords Database & Kalibrasi GIS Teritori
+* **Kamus Slang & InSet Lexicon:**
+  * Mengintegrasikan 1.509 padanan kata gaul dari repositori Ade Arini Putri + dialek lokal Jatim ke `engine-nlp/data/slang.csv`.
+  * Mengintegrasikan 9.119 leksikon InSet (fajri91/InSet: `positive.tsv` 3.610 lema, `negative.tsv` 6.610 lema) dengan konversi polaritas $[-5, +5] \rightarrow [-1.0, +1.0]$ pada engine Python FastAPI.
+* **Modul Wordcloud Sentimen & Isu Topik di Dashboard:**
+  * Menghadirkan tag cloud kata kunci interaktif dengan 3 bilik: *Sentimen Positif*, *Sentimen Negatif*, dan *Isu Topik Dominan*.
+  * Ukuran font kata proporsional terhadap frekuensi kemunculan (*Term Frequency*), dilengkapi badge frekuensi sebutan.
+* **Manajemen Stopwords Database (`/stopwords`):**
+  * Membuat tabel database `stopwords` dengan 6 kategori terstruktur (Daerah, Waktu, Angka, Sapaan & Gelar, Aksi Umum, Umum).
+  * Mengembangkan antarmuka CRUD lengkap via `StopwordController` dan seeder awal 189 kata henti.
+  * Membuka endpoint API `GET /api/stopwords` untuk sinkronisasi otomatis ke pipeline NLP.
+* **Solusi Timeout 30 Detik Replace Data Total:**
+  * Mengatasi `FatalError: Maximum execution time of 30 seconds exceeded` pada `ActionController` dengan konfigurasi `ini_set('max_execution_time', 0)`, `set_time_limit(0)`, dan `ignore_user_abort(true)`.
+  * Menambahkan loading spinner animasi dan proteksi pencegah *double submit* pada modal antarmuka web.
+  * Hasil eksekusi *Replace Total* sukses mengindeks **3.680 berita terkurasi** (2.452 Isu Lokal Pemkab, 1.228 Program Strategis Nasional), serta 858 ekstraksi geospasial.
+* **Penyempurnaan GIS Peta 21 Kecamatan:**
+  * Memperbaiki *property matching* GeoJSON dari `NAME_3` ke `district_name` (dengan regex pembersih prefix `kecamatan`).
+  * Mengkalibrasi 4 level warna Choropleth sentimen teritori: *Sangat Kondusif* (`#10b981`), *Kondusif & Stabil* (`#06b6d4`), *Perlu Atensi* (`#f59e0b`), dan *Rawan Keluhan* (`#f43f5e`).
+  * Menambahkan 5 kartu metrik teritorial di header halaman peta.
+  * Menambahkan **Feed Dokumen Berita Teritorial Langsung** di dalam panel inspektor wilayah sehingga artikel berita per kecamatan dapat langsung dibaca dan ditelusuri.

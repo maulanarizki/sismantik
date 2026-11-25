@@ -84,3 +84,49 @@ $$r_{xy}(k) = \frac{\sum (X_t - \bar{X})(Y_{t+k} - \bar{Y})}{\sqrt{\sum (X_t - \
 
 * **Contoh Kasus Riil:** Keluhan antrean RSUD (Dinkes) berkorelasi tinggi dengan jeda waktu $k = 1$ jam terhadap server mati di Disdukcapil (karena verifikasi BPJS/NIK gagal). Sistem dapat menunjukkan akar masalah yang sesungguhnya ke pimpinan.
 
+---
+
+#### G. Hybrid Lexicon & Deep Learning Sentiment Engine (IndoBERT + InSet + Slang)
+Untuk menangkap variasi bahasa gaul dan konteks opini publik lokal secara presisi, sistem menerapkan arsitektur *hybrid ensemble*:
+
+1. **Normalisasi Slang (Ade Arini Putri + Dialek Jatim):**
+   Setiap token input diperiksa terhadap 1.509 lema padanan pada `engine-nlp/data/slang.csv`. Kata gaul dan singkatan percakapan distandarkan sebelum klasifikasi.
+
+2. **InSet Sentiment Lexicon Scoring:**
+   Menggunakan 9.119 leksikon polaritas (3.610 lema positif berbobot $+1$ s.d. $+5$, 6.610 lema negatif berbobot $-1$ s.d. $-5$) yang dipetakan ke skala continuous $[-1.0, +1.0]$:
+
+   $$S_{inset} = \frac{1}{|W_{match}|} \sum_{w \in W_{match}} \frac{Score(w)}{5.0}$$
+
+3. **Skor Ensemble Gabungan:**
+   $$S_{final} = 0.70 \times S_{bert} + 0.30 \times S_{inset}$$
+
+   Di mana $S_{bert} = P(Positive) - P(Negative)$. Jika $|S_{final}| \le 0.05$, label ditetapkan sebagai *neutral*, $S_{final} > 0.05$ sebagai *positive*, dan $S_{final} < -0.05$ sebagai *negative*.
+
+---
+
+#### H. Algoritma Wordcloud Sentimen & Ekstraksi Term Frequency (TF)
+Untuk memetakan topik dominan dan kata kunci dalam sentimen tanpa kebisingan (*noise*), sistem menerapkan pembersihan berbasis tabel database `stopwords`:
+
+1. **Tokenisasi & Filtrasi Multi-Klaster:**
+   Teks dibersihkan dari 6 klaster kata henti database:
+   $$\mathcal{W}_{clean} = \{w \in \mathcal{W} \mid w \notin \mathcal{S}_{daerah} \cup \mathcal{S}_{waktu} \cup \mathcal{S}_{angka} \cup \mathcal{S}_{sapaan} \cup \mathcal{S}_{aksi} \cup \mathcal{S}_{umum} \land \text{length}(w) \ge 3\}$$
+
+2. **Perhitungan Term Frequency (TF) & Pemisahan Sentimen:**
+   Setiap kata dihitung frekuensi kemunculannya berdasarkan klasifikasi sentimen dokumen ($TF_{pos}(w)$, $TF_{neg}(w)$, dan $TF_{topik}(w)$).
+
+3. **Pemetaan Skala Visual Font Wordcloud:**
+   $$FontSize(w) = FontSize_{min} + \left( \frac{TF(w) - TF_{min}}{TF_{max} - TF_{min}} \right) \times (FontSize_{max} - FontSize_{min})$$
+   dengan rentang font dinamis 12px s.d. 32px untuk visualisasi tag cloud berkontras tinggi.
+
+---
+
+#### I. Kalibrasi Klasifikasi Choropleth Sentimen Teritorial 21 Kecamatan
+Pewarnaan peta geospasial 21 kecamatan dihitung berdasarkan Net Sentiment Score ($NSS$) dan Rasio Sentimen Negatif ($NegRatio$) per wilayah kecamatan $k$:
+
+$$NSS_k = \frac{Pos_k - Neg_k}{Total_k} \times 100\%, \quad NegRatio_k = \frac{Neg_k}{Total_k} \times 100\%$$
+
+**Kriteria Ambang Batas 4 Level Teritorial:**
+1. **Sangat Kondusif (`#10b981` / Hijau Emerald):** $NSS_k \ge +15\%$
+2. **Kondusif & Stabil (`#06b6d4` / Biru Cyan):** $0\% \le NSS_k < +15\%$
+3. **Perlu Atensi (`#f59e0b` / Kuning Amber):** $-30\% \le NSS_k < 0\%$
+4. **Rawan Keluhan (`#f43f5e` / Merah Kirmizi):** $NegRatio_k \ge 40\%$ ATAU $NSS_k < -30\%$

@@ -3,7 +3,7 @@
 **Identitas Wilayah:** Kabupaten Jombang, Provinsi Jawa Timur (Kota Santri)  
 **Pusat Pemerintahan:** Jl. KH. Wahid Hasyim No. 137, Kepanjen, Jombang  
 **Pembagian Wilayah:** 21 Kecamatan | 302 Desa & 4 Kelurahan  
-**Dataset Terindeks Saat Ini:** 2.952 Berita Terkurasi (Rentang 12 Bulan Terakhir)
+**Dataset Terindeks Saat Ini:** 3.680 Berita Terkurasi (Rentang 12 Bulan Terakhir) — 2.452 Isu Lokal Pemkab & 1.228 Program Strategis Nasional (858 Geo Extractions)
 
 ---
 
@@ -73,28 +73,26 @@ Selain 10 dinas daerah, SISMANTIK PRO memantau secara spesifik 4 pilar kebijakan
 
 ---
 
-### 4. Daftar Resmi 21 Kecamatan Se-Kabupaten Jombang (GADM 4.1 GeoJSON)
+### 4. Status Kondusivitas Riil 21 Kecamatan Se-Kabupaten Jombang
 
-Pusat Komando Geospasial SISMANTIK PRO memetakan sentimen dan keluhan warga ke dalam 21 kecamatan resmi berikut:
+Berdasarkan hasil analisis kalibrasi geospasial 12 bulan terakhir pada 858 berita teritorial, status 21 kecamatan terpetakan sebagai berikut:
 
-1. **Kecamatan Jombang (Kota)** - Pusat pemerintahan dan episentrum volume berita.
-2. **Kecamatan Ploso** - Kawasan industri Utara Brantas & Jembatan Ploso.
-3. **Kecamatan Peterongan** - Jalur arteri nasional dan kawasan perdagangan.
-4. **Kecamatan Diwek** - Sentra wisata religi Tebuireng dan Makam Gus Dur.
-5. **Kecamatan Mojoagung** - Titik rawan banjir DAS Kali Gunting dan jalur perbatasan Mojokerto.
-6. **Kecamatan Tembelang** - Sentra pertanian dan koridor pintu tol Jombang.
-7. **Kecamatan Kesamben** - Wilayah pertanian timur dan perbatasan sungai Brantas.
-8. **Kecamatan Sumobito** - Daerah agraris dan titik rawan genangan banjir.
-9. **Kecamatan Perak** - Jalur utama barat perbatasan Kabupaten Nganjuk.
-10. **Kecamatan Bandar Kedungmulyo** - Titik rawan banjir tanggul sungai dan perlintasan KA.
-11. **Kecamatan Ngoro** - Daerah transisi selatan menuju Kediri.
-12. **Kecamatan Bareng** - Wilayah sub-pegunungan penyangga sektor perkebunan.
-13. **Kecamatan Wonosalam** - Episentrum ekowisata, perkebunan durian, kopi, dan cengkeh.
-14. **Kecamatan Mojowarno** - Sentra mebel kayu dan kawasan agraris tengah.
-15. **Kecamatan Gudo** - Pusat kerajinan manik-manik kaca dan kerukunan warga klenteng.
-16. **Kecamatan Kabuh** - Kawasan industri utara, ruas jalan Kabuh-Tapen, dan dapur SPPG.
-17. **Kecamatan Plandaan** - Kawasan perbukitan utara dan wilayah lumbung jagung/jati.
-18. **Kecamatan Kudu** - Wilayah perbatasan utara Brantas menuju Lamongan.
-19. **Kecamatan Ngusikan** - Wilayah perbatasan perbukitan kapur Kabupaten Mojokerto.
-20. **Kecamatan Megaluh** - Jalur penyeberangan perahu tambang sungai Brantas.
-21. **Kecamatan Jogoroto** - Sentra industri rumahan makanan olahan dan tahu.
+| Status Teritorial | Warna Choropleth | Kriteria Skor | Daftar Kecamatan Terpetakan |
+| :--- | :---: | :--- | :--- |
+| **Sangat Kondusif** | Hijau Emerald (`#10b981`) | $\text{NSS} \ge +15\%$ | **Kecamatan Jombang (Kota)** |
+| **Kondusif & Stabil** | Biru Cyan (`#06b6d4`) | $0\% \le \text{NSS} < +15\%$ | **Kecamatan Wonosalam**, **Kecamatan Ploso**, **Kecamatan Gudo** |
+| **Perlu Atensi** | Kuning Amber (`#f59e0b`) | $-30\% \le \text{NSS} < 0\%$ | **Kecamatan Peterongan**, **Kecamatan Mojoagung**, **Kecamatan Kabuh**, **Kecamatan Bareng**, **Kecamatan Diwek**, **Kecamatan Kesamben**, **Kecamatan Kudu** |
+| **Rawan Keluhan** | Merah Kirmizi (`#f43f5e`) | Rasio Negatif $\ge 40\%$ atau $\text{NSS} < -30\%$ | **Kecamatan Bandar Kedungmulyo**, **Kecamatan Sumobito**, **Kecamatan Perak**, **Kecamatan Tembelang**, **Kecamatan Megaluh**, **Kecamatan Mojowarno**, **Kecamatan Ngoro**, **Kecamatan Plandaan**, **Kecamatan Jogoroto**, **Kecamatan Ngusikan** |
+
+---
+
+### 5. Basis Data Kata Henti Lokal Jombang (*Stopwords*)
+
+Untuk menyaring kebisingan kata pada Wordcloud dan Topic Modelling, sistem mengelola kata henti di database `stopwords` yang terbagi dalam 6 klaster:
+
+1. **Klaster Daerah:** `kabupaten, jombang, pemkab, pemda, pemerintah, kecamatan, kelurahan, desa, jatim, jawa, timur`.
+2. **Klaster Waktu:** `senin, selasa, rabu, kamis, jumat, sabtu, minggu`, nama bulan (`januari` s.d. `desember`, `jan` s.d. `des`), serta waktu (`pagi, siang, sore, malam`).
+3. **Klaster Angka:** `ribu, juta, miliar, triliun, persen, rupiah`.
+4. **Klaster Sapaan & Gelar:** `bapak, ibu, pak, bu, mas, mbak, kak, saudara, saudari, prof, drs, dra, dr, hj`.
+5. **Klaster Aksi Umum:** `gelar, lakukan, melakukan, laksanakan, adakan, hadiri, hadir, mulai`.
+6. **Klaster Umum:** Kata hubung dan kata tugas bahasa Indonesia standar.

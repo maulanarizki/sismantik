@@ -32,6 +32,8 @@ SISMANTIK PRO dikonfigurasi untuk berjalan **100% secara langsung di lingkungan 
 |   Framework: PHP 8.4 + Laravel 11                                                     |
 |   Frontend : Tailwind CSS (CDN/Custom Dark Mode) + Alpine.js v3.14 (Reactivity)       |
 |   Grafik   : Chart.js v4 (12-Month Timeline Area Chart & 6-Emotion Donut Chart)       |
+|   NLP UI   : Wordcloud Sentimen & Isu Topik (Tag Cloud Interaktif Positif/Negatif)    |
+|   Stopwords: Manajemen Stopwords Database CRUD (/stopwords & /api/stopwords)          |
 |   Peta GIS : Leaflet.js v1.9 (Local Asset) + 21 Poligon GADM 4.1 Kab. Jombang         |
 |   Basemap  : OpenStreetMap Standard & Esri World Imagery (Zero Watermark / No API Key)|
 |   Desain   : 100% Custom Bespoke UI (High Contrast, Light/Dark Switcher, Zero Filament|
@@ -43,7 +45,8 @@ SISMANTIK PRO dikonfigurasi untuk berjalan **100% secara langsung di lingkungan 
 |             PYTHON NLP & SCRAPING SERVICE (PORT 8001 / venv)                          |
 |                                                                                       |
 |   Framework: Python 3.13 + FastAPI + Uvicorn (Worker Background)                      |
-|   Model    : IndoBERT Multi-Aspect + VADER Sentiment Engine (CPU Multi-Thread 12 Core)|
+|   Model    : IndoBERT Multi-Aspect + InSet Lexicon (9.119 Lema) + VADER Fallback      |
+|   Kamus    : Slang Ade Arini Putri (1.509 Lema) + Dialek Jatim + DB Stopwords Sync   |
 |   Emosi    : 6 Klasifikasi Diskrit (Apresiasi, Harapan, Kecewa, Marah, Sedih, Takut)   |
 |   Deduplikasi: MinHash LSH (datasketch) & Deteksi Buzzer/Bot                          |
 |   Scraper  : Trafilatura, Feedparser (RSS), Playwright Stealth                        |
@@ -55,8 +58,8 @@ SISMANTIK PRO dikonfigurasi untuk berjalan **100% secara langsung di lingkungan 
 |                              BASIS DATA & STORAGE LAYER                               |
 |                                                                                       |
 |   MySQL/MariaDB : `hantu` @ 127.0.0.1:3306 (user: dev, pass: mbg)                     |
-|                   2.952 Berita Terindeks, 2.952 Hasil Sentimen, 14 Topik/OPD,         |
-|                   13 Endpoint Scraper, Riwayat Sinkronisasi                           |
+|                   3.680 Berita Terindeks, 3.680 Hasil Sentimen, 14 Topik/OPD,         |
+|                   189 Stopwords Terklasifikasi, 13 Endpoint Scraper, Audit Logs       |
 |   Redis Server  : 127.0.0.1:6379 (Session, Cache, Queue Driver)                       |
 +---------------------------------------------------------------------------------------+
 ```
@@ -82,10 +85,12 @@ SISMANTIK PRO dikonfigurasi untuk berjalan **100% secara langsung di lingkungan 
 #### B. NLP & Scraping Microservice (`engine-nlp/`)
 * **Runtime:** **Python 3.13** dalam Virtual Environment terisolasi (`engine-nlp/venv/`).
 * **API Service:** **FastAPI + Uvicorn** berjalan pada `127.0.0.1:8001`.
-* **Arsitektur Model NLP:**
-  * **IndoBERT Multi-Aspect Classifier:** Menghasilkan skor polaritas (Positif, Netral, Negatif).
-  * **VADER Lexicon Fallback & Emoticon Converter (`demoji`):** Menganalisis sentimen dari ragam bahasa gaul dan emoji.
-  * **Kamus Normalisasi Slang Jawa/Sunda:** Mengubah kata tidak baku seperti *"gak", "dalan ajur", "rusak parah"* ke makna standar.
+* **Arsitektur Model & Sumber Daya NLP:**
+  * **IndoBERT Multi-Aspect Classifier:** Menghasilkan probabilitas dasar 3-kelas sentimen (Positif, Netral, Negatif).
+  * **InSet Lexicon Engine (fajri91/InSet):** 9.119 leksikon berbobot (`positive.tsv` 3.610 kata, `negative.tsv` 6.610 kata) yang dinormalisasi $[-5, +5] \rightarrow [-1.0, +1.0]$ untuk memperkuat sensitivitas sentimen opini publik lokal.
+  * **Kamus Normalisasi Slang Ade Arini Putri + Dialek Jatim:** Memuat 1.509 padanan kata gaul (`engine-nlp/data/slang.csv`) untuk standarisasi istilah tidak baku (*"dalan ajur", "rusak parah", "tambal sulam", "bapuk"*).
+  * **Dynamic Stopwords Engine:** Mengonsumsi daftar kata henti terklasifikasi secara langsung dari database via API `GET /api/stopwords` untuk pembersihan teks optimal.
+  * **VADER Lexicon Fallback & Emoticon Converter (`demoji`):** Menganalisis sentimen dari ragam bahasa percakapan informal dan emoji.
   * **MinHash LSH (`datasketch`):** Menghitung nilai hash Jaccard untuk menyaring konten sindikasi/duplikat massal.
 * **Ekstraktor Teks Berita:**
   * **Trafilatura:** Mengekstraksi artikel berita dari HTML mentah tanpa gangguan iklan, navigasi, atau banner.
@@ -94,16 +99,17 @@ SISMANTIK PRO dikonfigurasi untuk berjalan **100% secara langsung di lingkungan 
 #### C. Daftar Controller & Rute Sistem Terpasang
 | Controller | Rute URL | Fungsi Utama |
 | :--- | :--- | :--- |
-| `DashboardController` | `GET /` & `GET /dashboard` | Mengagregasi 4 Master KPI, 4 PSN cards, tren sentimen 12 bulan, 10 rapor OPD, matriks framing, 6 emosi, dan PDB AI. |
-| `GeospatialController` | `GET /peta` | Menghitung statistik sentimen 21 kecamatan, passing GeoJSON, leaderboard, dan inspector HUD. |
+| `DashboardController` | `GET /` & `GET /dashboard` | Mengagregasi 4 Master KPI, 4 PSN cards, tren sentimen 12 bulan, Wordcloud Sentimen & Isu Topik, 10 rapor OPD, matriks framing, 6 emosi, dan PDB AI. |
+| `GeospatialController` | `GET /peta` | Menghitung statistik sentimen 21 kecamatan, normalisasi atribut `district_name`, kalibrasi 4 warna Choropleth, feed artikel berita teritorial langsung, dan inspector HUD. |
+| `StopwordController` | `GET /stopwords`<br>`POST /stopwords`<br>`PUT /stopwords/{id}`<br>`DELETE /stopwords/{id}`<br>`GET /api/stopwords` | Manajemen CRUD kata henti database (6 kategori: Daerah, Waktu, Angka, Sapaan & Gelar, Aksi Umum, Umum) dan API penyedia kata henti aktif. |
 | `RawContentController` | `GET /berita` | Menampilkan katalog arsip berita dengan filter pencarian, scope, sentimen, dan paginasi. |
 | `TopicAgencyController`| `GET /opd` & `POST /opd/{id}/toggle` | Direktori 10 OPD Pemkab Jombang + PSN, daftar kata kunci, dan tombol On/Off status aktif. |
 | `SourceController` | `GET /sumber` | Daftar portal media dan 13 endpoint scraper. |
 | `SyncJobController` | `GET /sinkronisasi` | Log audit sesi sinkronisasi data, durasi proses, dan status. |
 | `GuideController` | `GET /panduan` | SOP operasional, alur scraping, dan petunjuk pemulihan data total. |
 | `ActionController` | `POST /action/sync` | Trigger penarikan berita inkremental (`sismantik:sync --max=20`). |
-| `ActionController` | `POST /action/replace-total` | Trigger pembersihan data & penarikan ulang 12 bulan (`sismantik:replace-total`). |
-| `ActionController` | `POST /api/drilldown-articles` | Endpoint JSON penyedia artikel berita untuk modal drilldown interaktif. |
+| `ActionController` | `POST /action/replace-total` | Trigger pembersihan data & penarikan ulang 12 bulan (`sismantik:replace-total`) dengan bypass batas eksekusi 30 detik (`set_time_limit(0)`). |
+| `ActionController` | `POST /api/drilldown-articles` | Endpoint JSON penyedia artikel berita untuk modal drilldown interaktif (filter: keyword, district, sentiment, emotion, dates). |
 | *Route Redirector* | `GET /admin/*` | Mengalihkan URL lama Filament secara otomatis (*302 Found*) ke antarmuka baru. |
 
 ---

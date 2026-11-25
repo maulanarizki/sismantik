@@ -128,7 +128,7 @@ Waktu: Pekan 4
 | Komponen | Status | Catatan Teknis |
 | :--- | :--- | :--- |
 | **MySQL 8 (`hantu`)** | Ready | Siap ditambahkan 3 tabel migrasi lanjutan |
-| **Laravel 11 & Filament v3** | Ready | Siap ditambahkan halaman visualisasi Framing & SNA |
+| **Laravel 11 & Native Blade UI** | Ready | Siap ditambahkan halaman visualisasi Framing & SNA |
 | **Python 3.13 venv** | Ready | Pustaka `scipy`, `numpy`, `datasketch`, `torch` sudah terpasang |
 | **Tor Proxy Daemon** | Optional | Dapat diaktifkan dengan `sudo apt install tor` untuk rotasi IP gratis |
 | **Ollama Local LLM** | Ready to Hook | Endpoint `http://127.0.0.1:11434` untuk penalaran dokumen intelijen |

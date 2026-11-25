@@ -11,16 +11,17 @@ flowchart TD
         UI1["Executive Command Center (/dashboard)"]
         UI2["Pusat Komando GIS 21 Kecamatan (/peta)"]
         UI3["Katalog Berita & Opini (/berita)"]
-        UI4["Modal Drilldown Interaktif (Alpine.js)"]
+        UI4["Manajemen Stopwords (/stopwords)"]
+        UI5["Modal Drilldown Interaktif (Alpine.js)"]
     end
 
     subgraph WEB_CORE["Core Web Application (PHP 8.4 & Laravel 11 - Port 8000)"]
         direction TB
         R1["Web Router (routes/web.php)\n+ Admin 302 Aliases"]
-        C1["DashboardController"]
-        C2["GeospatialController"]
-        C3["RawContentController"]
-        C4["TopicAgencyController"]
+        C1["DashboardController (Wordcloud & KPI)"]
+        C2["GeospatialController (GIS & News Feed)"]
+        C3["StopwordController (CRUD & /api/stopwords)"]
+        C4["RawContentController & TopicAgencyController"]
         C5["SourceController & SyncJobController"]
         C6["ActionController (/action/* & /api/drilldown-articles)"]
         M1["Blade Layout & Tailwind CSS + Alpine.js"]
@@ -38,25 +39,28 @@ flowchart TD
         P4["Playwright Stealth Worker (Dynamic Web)"]
         P5["MinHash LSH Deduplicator & Bot Detector"]
         P6["IndoBERT Multi-Aspect Sentiment Classifier"]
-        P7["Discrete 6-Emotion Classifier (VADER & Demoji)"]
-        P8["Slang & Dialek Normalizer (Jawa/Sunda)"]
+        P7["InSet Sentiment Lexicon (9.119 Lema fajri91/InSet)"]
+        P8["Slang Normalizer (1.509 Lema Ade Arini Putri + Jatim)"]
+        P9["Dynamic Stopwords Filter (Sync via /api/stopwords)"]
+        P10["Discrete 6-Emotion Classifier (VADER & Demoji)"]
     end
 
     subgraph DB_LAYER["Basis Data Relasional Lokal"]
-        D1[("MySQL / MariaDB: hantu\n127.0.0.1:3306 (user: dev, pass: mbg)\n- 2.952 Raw Contents\n- 2.952 Sentiment & Emotion Results\n- 14 Topics / 10 OPD Pemkab Jombang\n- 21 Kecamatan Geo Extractions\n- 13 Scraper Endpoints & Audit Logs")]
+        D1[("MySQL / MariaDB: hantu\n127.0.0.1:3306 (user: dev, pass: mbg)\n- 3.680 Raw Contents (12 Bulan)\n- 3.680 Sentiment & Emotion Results\n- 858 Geo Extractions (21 Kecamatan)\n- 14 Topics / 10 OPD Pemkab Jombang\n- 189 Stopwords (6 Kategori)\n- 13 Scraper Endpoints & Audit Logs")]
     end
 
     %% Hubungan Alur Data
-    UI1 & UI2 & UI3 -->|HTTP GET Request| R1
+    UI1 & UI2 & UI3 & UI4 -->|HTTP GET Request| R1
     R1 --> C1 & C2 & C3 & C4 & C5 & C6
     C1 & C2 & C3 & C4 & C5 --> M1 & M2
-    UI4 -->|POST /api/drilldown-articles| C6
+    UI5 -->|POST /api/drilldown-articles| C6
     C6 -->|Query Berita Terkait| D1
-    C1 & C2 -->|Query Agregasi 12 Bulan & Sentimen| D1
+    C1 & C2 & C3 -->|Query Agregasi 12 Bulan & Sentimen| D1
     C6 -->|Trigger Sync / Replace Total| P1
     P1 --> P2 & P3 & P4
-    P2 & P3 & P4 --> P5 --> P6 --> P7 --> P8
-    P8 -->|Simpan Konten & Hasil Sentimen| D1
+    P2 & P3 & P4 --> P5 --> P6 --> P7 --> P8 --> P9 --> P10
+    P9 <-->|GET /api/stopwords| C3
+    P10 -->|Simpan Konten & Hasil Sentimen| D1
     WEB_CORE <-->|Cache & Session| B1
 ```
 
@@ -193,7 +197,7 @@ CREATE TABLE `sentiment_results` (
     `emotion_label` VARCHAR(50) NULL, -- 'apresiasi', 'harapan', 'kecewa', 'marah', 'sedih', 'takut'
     `framing_category` VARCHAR(100) NULL, -- 'Infrastruktur', 'Kesehatan', 'Pertanian', dll.
     `explanation` TEXT NULL,
-    `model_version` VARCHAR(50) DEFAULT 'IndoBERT-VADER-v1.0',
+    `model_version` VARCHAR(50) DEFAULT 'IndoBERT-InSet-VADER-v1.0',
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (`raw_content_id`) REFERENCES `raw_contents`(`id`) ON DELETE CASCADE,
@@ -236,7 +240,10 @@ CREATE TABLE `sync_jobs` (
     `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
 
+#### 8. Tabel Manajemen Kata Henti (*Stopwords*)
+```sql
 CREATE TABLE `stopwords` (
     `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `word` VARCHAR(100) NOT NULL UNIQUE,
@@ -260,3 +267,16 @@ CREATE TABLE `stopwords` (
   Mengosongkan tabel `raw_contents`, `sentiment_results`, dan `geo_extractions`, kemudian menarik ulang data segar 12 bulan terakhir dan langsung menganalisisnya melalui Python NLP Engine.
 * **`php artisan sismantik:analyze-content`**  
   Memindai seluruh data `raw_contents` yang berstatus `is_analyzed = 0` dan mengirimkannya ke microservice FastAPI untuk dianalisis sentimen dan entitasnya.
+
+---
+
+### 5. Spesifikasi Endpoint API Internal Sistem
+
+| Method | Endpoint URL | Konsumen | Deskripsi & Payload |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/drilldown-articles` | Alpine.js Modal | Mengambil daftar berita terkait filter: `{keyword, districtName, sentiment, emotion, scope, startDate, endDate}`. Mengembalikan JSON list artikel + meta. |
+| `GET` | `/api/stopwords` | Python NLP / Service | Mengembalikan daftar kata henti aktif dalam JSON: `{"success": true, "total": 189, "data": ["kata1", "kata2", ...]}`. |
+| `POST` | `/action/sync` | Web Button | Memicu sinkronisasi inkremental via artisan command. |
+| `POST` | `/action/replace-total` | Web Modal | Memicu pembersihan total dan re-ingest 12 bulan dengan bypass timeout PHP (`set_time_limit(0)`). |
+| `POST` | `http://127.0.0.1:8001/api/analyze-batch` | Laravel Artisan | Menerima array teks berita untuk inferensi sentimen, emosi, entitas wilayah, dan normalisasi slang. |
+| `POST` | `http://127.0.0.1:8001/api/scrape-and-analyze` | Laravel Artisan | Menjalankan penarikan artikel dari URL dan langsung mengembalikan hasil analisis NLP lengkap. |
