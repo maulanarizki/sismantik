@@ -29,6 +29,10 @@ Sistem ini beroperasi **100% mandiri tanpa ketergantungan API eksternal berbayar
     2. *Koperasi Desa (Kopdes) & Ketahanan Pangan* (Kemenkop, Bulog, penyerapan gabah lokal).
     3. *Pemberantasan Korupsi & Penegakan Hukum Daerah* (KPK, Kejari Jombang).
     4. *Swasembada Pangan & Alsintan Nasional* (Kementan, BBWS Brantas).
+  * **Pusat Frekuensi Kata Kunci & Wordcloud Sentimen:**
+    * Visualisasi 3 klaster awan kata dinamis (*Wordcloud*): **Sentimen Positif** (warna emerald), **Sentimen Negatif** (warna rose), dan **Isu Topik Dominan** (warna indigo/cyan).
+    * Tipografi adaptif berdasarkan densitas kemunculan kata pada 2.952 berita.
+    * Seluruh kata terhubung langsung dengan *Interactive Article Drilldown Modal*.
   * **Grafik Tren Sentimen 12 Bulan (Chart.js Area Chart):** Fluktuasi volume dan sentimen berdasarkan tanggal riil rilis berita (`published_at`).
   * **Rapor Kinerja 10 OPD Pemkab Jombang:** Pemeringkatan volume dan penerimaan publik per dinas dilengkapi multi-sentiment progress bar.
   * **Matriks Framing Isu & Aduan Warga:** 5 Klaster isu (Infrastruktur, Kesehatan, Pertanian, Pendidikan, Hukum).
@@ -43,6 +47,13 @@ Sistem ini beroperasi **100% mandiri tanpa ketergantungan API eksternal berbayar
   * Klik pada kartu PSN, baris OPD, klaster framing, irisan emosi, maupun poligon kecamatan untuk membuka daftar berita asli beserta cuplikan teks, badge sentimen, dan tautan sumber portal.
 * **Katalog Berita & Opini Publik (`/berita`):** Pencarian teks penuh, filter ruang lingkup (Semua, Lokal Pemkab, PSN), filter sentimen, dan paginasi.
 * **Direktori OPD & Kata Kunci (`/opd`):** Manajemen 10 OPD + PSN, kata kunci pemantauan, dan toggle aktifasi status dinas.
+* **Manajemen Stopwords & Filter Kebisingan Teks (`/stopwords`):**
+  * CRUD basis data terkelola untuk menyaring kata-kata non-esensial dari analisis wacana dan wordcloud.
+  * 6 Kategori terklasifikasi: *Daerah & Wilayah, Waktu & Kalender, Angka & Nominal, Sapaan & Gelar, Aksi Umum, Stopword Umum*.
+  * Fitur penambahan massal (*bulk comma/newline separated*), toggle status aktif secara instan, dan endpoint API publik (`GET /api/stopwords`).
+* **Pengayaan NLP & Leksikon Sentimen Mandiri:**
+  * **Kamus Slang Indonesia:** 1.509 pasangan normalisasi kata gaul/singkatan dari repositori *adeariniputri* yang diintegrasikan dengan dialek lokal Jawa Timur/Jombang.
+  * **Kamus Sentimen InSet:** 9.119 bobot polaritas kata dari repositori *fajri91/InSet* (3.610 kata positif dan 6.610 kata negatif terkalibrasi normal).
 * **Portal & Sumber Data (`/sumber`):** Daftar portal media terakreditasi dan 13 endpoint scraper.
 * **Siklus Pembaruan Data (`/panduan` & Header):**
   * *Tarik Berita:* Sinkronisasi inkremental berita terbaru (`sismantik:sync --max=20`).

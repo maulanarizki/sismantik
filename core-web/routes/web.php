@@ -6,6 +6,7 @@ use App\Http\Controllers\GeospatialController;
 use App\Http\Controllers\GuideController;
 use App\Http\Controllers\RawContentController;
 use App\Http\Controllers\SourceController;
+use App\Http\Controllers\StopwordController;
 use App\Http\Controllers\SyncJobController;
 use App\Http\Controllers\TopicAgencyController;
 use Illuminate\Support\Facades\Route;
@@ -29,6 +30,14 @@ Route::get('/berita', [RawContentController::class, 'index'])->name('berita');
 // OPD Directory & Keywords
 Route::get('/opd', [TopicAgencyController::class, 'index'])->name('opd');
 Route::post('/opd/{id}/toggle', [TopicAgencyController::class, 'toggle'])->name('opd.toggle');
+
+// Stopwords & Noise Filtering CRUD
+Route::get('/stopwords', [StopwordController::class, 'index'])->name('stopwords.index');
+Route::post('/stopwords', [StopwordController::class, 'store'])->name('stopwords.store');
+Route::put('/stopwords/{id}', [StopwordController::class, 'update'])->name('stopwords.update');
+Route::delete('/stopwords/{id}', [StopwordController::class, 'destroy'])->name('stopwords.destroy');
+Route::post('/stopwords/{id}/toggle', [StopwordController::class, 'toggle'])->name('stopwords.toggle');
+Route::get('/api/stopwords', [StopwordController::class, 'apiIndex'])->name('api.stopwords');
 
 // Media Portals & Sources
 Route::get('/sumber', [SourceController::class, 'index'])->name('sumber');
@@ -54,6 +63,7 @@ Route::post('/api/drilldown-articles', [ActionController::class, 'drilldownArtic
 Route::get('/admin/peta-geospasial', fn() => redirect('/peta'));
 Route::get('/admin/raw-contents', fn() => redirect('/berita'));
 Route::get('/admin/topic-or-agencies', fn() => redirect('/opd'));
+Route::get('/admin/stopwords', fn() => redirect('/stopwords'));
 Route::get('/admin/sources', fn() => redirect('/sumber'));
 Route::get('/admin/sync-jobs', fn() => redirect('/sinkronisasi'));
 Route::get('/admin/panduan-sistem', fn() => redirect('/panduan'));

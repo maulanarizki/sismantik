@@ -15,6 +15,9 @@ class ActionController extends Controller
 {
     public function sync(Request $request)
     {
+        ini_set('max_execution_time', '300');
+        set_time_limit(300);
+
         try {
             $exitCode = Artisan::call('sismantik:sync', ['--max' => 20]);
             $output = Artisan::output();
@@ -35,8 +38,13 @@ class ActionController extends Controller
 
     public function replaceTotal(Request $request)
     {
+        // Hindari batas waktu eksekusi 30 detik pada operasi re-ingestion skala besar
+        ini_set('max_execution_time', '0');
+        set_time_limit(0);
+        ignore_user_abort(true);
+
         try {
-            Artisan::call('sismantik:replace-total', [
+            $exitCode = Artisan::call('sismantik:replace-total', [
                 '--months' => 12,
                 '--max-per-month' => 1000,
                 '--confirm' => 'yes'

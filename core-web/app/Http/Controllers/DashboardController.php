@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\GeoExtraction;
 use App\Models\RawContent;
 use App\Models\SentimentResult;
+use App\Models\Stopword;
 use App\Models\TopicOrAgency;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
@@ -310,6 +312,71 @@ class DashboardController extends Controller
             ];
         }
 
+        // 7. Wordcloud Sentimen & Ekstraksi Frekuensi Kata (Filtered by Database Stopwords)
+        $activeStopwords = Stopword::where('is_active', true)->pluck('word')->flip()->toArray();
+        $activeStopwordsCount = count($activeStopwords);
+
+        $wordCloudRows = DB::table('raw_contents')
+            ->join('sentiment_results', 'raw_contents.id', '=', 'sentiment_results.raw_content_id')
+            ->whereBetween('raw_contents.published_at', [$start, $end])
+            ->when($scope !== 'all', fn($q) => $q->where('raw_contents.scope', $scope))
+            ->select('raw_contents.title', 'raw_contents.clean_text', 'sentiment_results.sentiment_label')
+            ->limit(1200)
+            ->get();
+
+        $rawPosWords = [];
+        $rawNegWords = [];
+        $rawTopicWords = [];
+
+        foreach ($wordCloudRows as $row) {
+            $snippet = mb_strtolower($row->title . ' ' . mb_substr($row->clean_text ?? '', 0, 350));
+            $tokens = preg_split('/[^\p{L}]+/u', $snippet, -1, PREG_SPLIT_NO_EMPTY);
+            
+            // Deduplicate per article to prevent single-article repetition distortion
+            $uniqueTokensInArticle = array_unique($tokens);
+
+            foreach ($uniqueTokensInArticle as $t) {
+                if (mb_strlen($t) < 4 || is_numeric($t) || isset($activeStopwords[$t])) {
+                    continue;
+                }
+
+                $rawTopicWords[$t] = ($rawTopicWords[$t] ?? 0) + 1;
+
+                if ($row->sentiment_label === 'positive') {
+                    $rawPosWords[$t] = ($rawPosWords[$t] ?? 0) + 1;
+                } elseif ($row->sentiment_label === 'negative') {
+                    $rawNegWords[$t] = ($rawNegWords[$t] ?? 0) + 1;
+                }
+            }
+        }
+
+        arsort($rawPosWords);
+        arsort($rawNegWords);
+        arsort($rawTopicWords);
+
+        $buildCloud = function(array $wordCounts, int $limit = 24) {
+            $slice = array_slice($wordCounts, 0, $limit, true);
+            if (empty($slice)) {
+                return [];
+            }
+            $max = max($slice);
+            $min = min($slice);
+            $cloud = [];
+            foreach ($slice as $w => $c) {
+                $level = ($max > $min) ? (1 + (int) round((($c - $min) / ($max - $min)) * 4)) : 3;
+                $cloud[] = [
+                    'word' => $w,
+                    'count' => $c,
+                    'level' => $level,
+                ];
+            }
+            return $cloud;
+        };
+
+        $posWordCloud = $buildCloud($rawPosWords, 24);
+        $negWordCloud = $buildCloud($rawNegWords, 24);
+        $topicWordCloud = $buildCloud($rawTopicWords, 30);
+
         return view('pages.dashboard', compact(
             'startDate',
             'endDate',
@@ -332,7 +399,11 @@ class DashboardController extends Controller
             'framingMatrix',
             'emotionData',
             'totalEmotions',
-            'topDistrictsPreview'
+            'topDistrictsPreview',
+            'posWordCloud',
+            'negWordCloud',
+            'topicWordCloud',
+            'activeStopwordsCount'
         ));
     }
 }

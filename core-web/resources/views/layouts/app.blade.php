@@ -262,6 +262,18 @@
                                 </span>
                             </a>
 
+                            <a href="/stopwords" class="flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-extrabold transition-all {{ request()->is('stopwords*') ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60' }}">
+                                <div class="flex items-center gap-2.5">
+                                    <svg class="w-4 h-4 {{ request()->is('stopwords*') ? 'text-emerald-500' : 'text-slate-400' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                                    </svg>
+                                    <span>Manajemen Stopwords</span>
+                                </div>
+                                <span class="text-[10px] font-mono font-bold text-slate-500">
+                                    {{ \App\Models\Stopword::count() }}
+                                </span>
+                            </a>
+
                             <a href="/sumber" class="flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-extrabold transition-all {{ request()->is('sumber*') ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60' }}">
                                 <div class="flex items-center gap-2.5">
                                     <svg class="w-4 h-4 {{ request()->is('sumber*') ? 'text-emerald-500' : 'text-slate-400' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -326,15 +338,21 @@
                 <p class="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
                     PERHATIAN: Tindakan ini akan <strong>mengosongkan seluruh histori data berita dan sentimen lama</strong>, lalu menarik ulang data segar 12 bulan terakhir (maksimal 1.000 data/bulan).
                 </p>
+                <div class="mt-2.5 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-300 text-[11px] leading-relaxed">
+                    <strong>Estimasi Waktu:</strong> Proses ini membutuhkan waktu sekitar <strong>35–60 detik</strong> untuk menarik ribuan artikel dan mengeksekusi pipeline NLP sentimen. Mohon tidak menutup atau merefresh peramban saat proses berlangsung.
+                </div>
             </div>
             <div class="flex items-center justify-end gap-2.5 pt-2">
-                <button type="button" @click="confirmReplaceModal = false" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-700">
+                <button type="button" @click="confirmReplaceModal = false" :disabled="isReplacing" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-700 disabled:opacity-50">
                     Batal
                 </button>
-                <form action="/action/replace-total" method="POST">
+                <form action="/action/replace-total" method="POST" @submit="isReplacing = true">
                     @csrf
-                    <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 shadow-md transition">
-                        Ya, Bersihkan & Tarik Ulang
+                    <button type="submit" :disabled="isReplacing" class="px-4 py-2 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 shadow-md transition flex items-center gap-2">
+                        <svg x-show="isReplacing" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        <span x-text="isReplacing ? 'Membersihkan & Menarik Ulang 12 Bulan (Tunggu)...' : 'Ya, Bersihkan & Tarik Ulang'"></span>
                     </button>
                 </form>
             </div>
@@ -410,6 +428,7 @@
                 isDark: document.documentElement.classList.contains('dark'),
                 currentTime: '',
                 isSyncing: false,
+                isReplacing: false,
                 confirmReplaceModal: false,
                 drilldownModalOpen: false,
                 drilldownTitle: '',

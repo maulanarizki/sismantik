@@ -169,5 +169,8 @@ class DatabaseSeeder extends Seeder
                 'is_active' => false,
             ]
         );
+
+        // 4. Stopwords Database
+        $this->call(StopwordSeeder::class);
     }
 }

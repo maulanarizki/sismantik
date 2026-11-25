@@ -1,8 +1,9 @@
+import os
 import re
 from typing import Dict, List, Any, Optional
 
 # Kamus Kata Sentimen & Emosi Bahasa Indonesia + Dialek Lokal (Jawa/Sunda/Gaul)
-INDONESIAN_SENTIMENT_LEXICON = {
+BASE_LOCAL_SENTIMENT_LEXICON = {
     # Positif (Apresiasi / Harapan)
     "bagus": 0.8, "baik": 0.7, "mantap": 0.9, "mantul": 0.9, "keren": 0.8,
     "top": 0.8, "jos": 0.8, "josss": 0.9, "apik": 0.8, "sae": 0.7,
@@ -29,6 +30,49 @@ INDONESIAN_SENTIMENT_LEXICON = {
     "was-was": -0.7, "takut": -0.75, "khawatir": -0.65, "cemas": -0.65,
     "sedih": -0.7, "prihatin": -0.6, "menangis": -0.7, "tangis": -0.65
 }
+
+def _load_inset_lexicon() -> Dict[str, float]:
+    """Memuat kamus InSet (Indonesian Sentiment Lexicon) dan menggabungkannya dengan kamus lokal."""
+    lex = {}
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", "inset"))
+    pos_file = os.path.join(base_dir, "positive.tsv")
+    neg_file = os.path.join(base_dir, "negative.tsv")
+
+    if os.path.exists(pos_file):
+        try:
+            with open(pos_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    parts = line.strip().split("\t")
+                    if len(parts) == 2:
+                        try:
+                            w = parts[0].strip().lower()
+                            score = float(parts[1]) / 5.0
+                            lex[w] = min(1.0, max(0.1, score))
+                        except ValueError:
+                            pass
+        except Exception as e:
+            print(f"Warning loading InSet positive: {e}")
+
+    if os.path.exists(neg_file):
+        try:
+            with open(neg_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    parts = line.strip().split("\t")
+                    if len(parts) == 2:
+                        try:
+                            w = parts[0].strip().lower()
+                            score = float(parts[1]) / 5.0
+                            lex[w] = max(-1.0, min(-0.1, score))
+                        except ValueError:
+                            pass
+        except Exception as e:
+            print(f"Warning loading InSet negative: {e}")
+
+    # Override with curated regional & local Jombang words
+    lex.update(BASE_LOCAL_SENTIMENT_LEXICON)
+    return lex
+
+INDONESIAN_SENTIMENT_LEXICON = _load_inset_lexicon()
 
 # Pembalik Polaritas (Negation)
 NEGATIONS = {"tidak", "tak", "gak", "nggak", "bukan", "belum", "ora", "ndak"}

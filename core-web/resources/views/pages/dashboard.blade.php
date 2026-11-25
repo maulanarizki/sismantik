@@ -373,6 +373,204 @@
         </div>
     </div>
 
+    {{-- ROW: PUSAT ANALISIS FREKUENSI KATA KUNCI & WORDCLOUD SENTIMEN --}}
+    <div class="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+            <div>
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/30">
+                        Analisis Semantik & Wordcloud Opini
+                    </span>
+                    <span class="text-[11px] font-mono text-slate-400">
+                        Stopword Filter: {{ number_format($activeStopwordsCount) }} Kata Aktif Disaring
+                    </span>
+                </div>
+                <h2 class="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+                    <svg class="w-5 h-5 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                    </svg>
+                    Pusat Frekuensi Kata Kunci & Wordcloud Sentimen
+                </h2>
+                <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+                    Sebaran kata yang paling sering muncul dalam sentimen warga dan klaster isu daerah. Klik kata untuk melihat dokumen berita terkait.
+                </p>
+            </div>
+
+            <div class="flex items-center gap-2 shrink-0">
+                <a href="/stopwords" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition">
+                    <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                    </svg>
+                    <span>Kelola Stopwords Database</span>
+                </a>
+            </div>
+        </div>
+
+        {{-- 3-Column Cloud Grid --}}
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            {{-- 1. Positive Words --}}
+            <div class="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-emerald-500/5 via-emerald-500/10 to-teal-500/5 border border-emerald-500/20 flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-400/40"></span>
+                        <h3 class="text-xs font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
+                            Sentimen Positif (Apresiasi / Kemajuan)
+                        </h3>
+                    </div>
+                    <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                        Top {{ count($posWordCloud) }} Kata
+                    </span>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-center gap-2 py-3 min-h-[180px]">
+                    @forelse($posWordCloud as $item)
+                        @php
+                            $sizeClasses = [
+                                1 => 'text-xs font-semibold py-1 px-2.5',
+                                2 => 'text-xs font-bold py-1 px-3',
+                                3 => 'text-sm font-extrabold py-1.5 px-3.5',
+                                4 => 'text-base font-black py-1.5 px-4',
+                                5 => 'text-lg font-black py-2 px-4 shadow-xs',
+                            ];
+                            $cls = $sizeClasses[$item['level']] ?? $sizeClasses[3];
+                        @endphp
+                        <button type="button"
+                            @click="$dispatch('open-article-drilldown', {
+                                title: 'Analisis Kata Kunci: {{ addslashes($item['word']) }}',
+                                subtitle: 'Kamus Sentimen Positif • Frekuensi: {{ $item['count'] }} Sebutan',
+                                keyword: '{{ $item['word'] }}',
+                                sentiment: 'positive',
+                                startDate: '{{ $startDate }}',
+                                endDate: '{{ $endDate }}'
+                            })"
+                            class="{{ $cls }} rounded-xl transition-all duration-200 transform hover:scale-108 hover:-translate-y-0.5 cursor-pointer bg-white dark:bg-slate-800/90 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700/60 hover:border-emerald-500 hover:shadow-md hover:shadow-emerald-500/20 flex items-center gap-1.5 group"
+                            title="Klik untuk membuka {{ $item['count'] }} artikel dengan kata '{{ $item['word'] }}'">
+                            <span>{{ $item['word'] }}</span>
+                            <span class="text-[10px] font-mono text-emerald-600/70 dark:text-emerald-400/60 font-bold group-hover:text-emerald-800 dark:group-hover:text-emerald-200">
+                                {{ $item['count'] }}
+                            </span>
+                        </button>
+                    @empty
+                        <div class="text-xs text-slate-400 italic py-8 text-center">
+                            Belum ada frekuensi kata positif terdeteksi.
+                        </div>
+                    @endforelse
+                </div>
+                
+                <div class="pt-2 border-t border-emerald-500/10 text-[10px] text-emerald-700/80 dark:text-emerald-400/80 font-medium text-center">
+                    Ukuran bubble mencerminkan frekuensi sebutan dalam konten bernada positif.
+                </div>
+            </div>
+
+            {{-- 2. Negative Words --}}
+            <div class="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-rose-500/5 via-rose-500/10 to-red-500/5 border border-rose-500/20 flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-rose-400/40"></span>
+                        <h3 class="text-xs font-black uppercase tracking-wider text-rose-800 dark:text-rose-300">
+                            Sentimen Negatif (Keluhan / Kerawanan)
+                        </h3>
+                    </div>
+                    <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800">
+                        Top {{ count($negWordCloud) }} Kata
+                    </span>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-center gap-2 py-3 min-h-[180px]">
+                    @forelse($negWordCloud as $item)
+                        @php
+                            $sizeClasses = [
+                                1 => 'text-xs font-semibold py-1 px-2.5',
+                                2 => 'text-xs font-bold py-1 px-3',
+                                3 => 'text-sm font-extrabold py-1.5 px-3.5',
+                                4 => 'text-base font-black py-1.5 px-4',
+                                5 => 'text-lg font-black py-2 px-4 shadow-xs',
+                            ];
+                            $cls = $sizeClasses[$item['level']] ?? $sizeClasses[3];
+                        @endphp
+                        <button type="button"
+                            @click="$dispatch('open-article-drilldown', {
+                                title: 'Analisis Kata Kunci: {{ addslashes($item['word']) }}',
+                                subtitle: 'Kamus Sentimen Negatif • Frekuensi: {{ $item['count'] }} Sebutan',
+                                keyword: '{{ $item['word'] }}',
+                                sentiment: 'negative',
+                                startDate: '{{ $startDate }}',
+                                endDate: '{{ $endDate }}'
+                            })"
+                            class="{{ $cls }} rounded-xl transition-all duration-200 transform hover:scale-108 hover:-translate-y-0.5 cursor-pointer bg-white dark:bg-slate-800/90 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-700/60 hover:border-rose-500 hover:shadow-md hover:shadow-rose-500/20 flex items-center gap-1.5 group"
+                            title="Klik untuk membuka {{ $item['count'] }} artikel dengan kata '{{ $item['word'] }}'">
+                            <span>{{ $item['word'] }}</span>
+                            <span class="text-[10px] font-mono text-rose-600/70 dark:text-rose-400/60 font-bold group-hover:text-rose-800 dark:group-hover:text-rose-200">
+                                {{ $item['count'] }}
+                            </span>
+                        </button>
+                    @empty
+                        <div class="text-xs text-slate-400 italic py-8 text-center">
+                            Belum ada frekuensi kata negatif terdeteksi.
+                        </div>
+                    @endforelse
+                </div>
+
+                <div class="pt-2 border-t border-rose-500/10 text-[10px] text-rose-700/80 dark:text-rose-400/80 font-medium text-center">
+                    Mendeteksi topik yang memicu keluhan, kritik kebijakan, atau kerusakan fasilitas.
+                </div>
+            </div>
+
+            {{-- 3. Topic & General Issue Words --}}
+            <div class="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-indigo-500/5 via-indigo-500/10 to-blue-500/5 border border-indigo-500/20 flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 ring-2 ring-indigo-400/40"></span>
+                        <h3 class="text-xs font-black uppercase tracking-wider text-indigo-800 dark:text-indigo-300">
+                            Isu Topik Dominan (Wacana Publik)
+                        </h3>
+                    </div>
+                    <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-800">
+                        Top {{ count($topicWordCloud) }} Kata
+                    </span>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-center gap-2 py-3 min-h-[180px]">
+                    @forelse($topicWordCloud as $item)
+                        @php
+                            $sizeClasses = [
+                                1 => 'text-xs font-semibold py-1 px-2.5',
+                                2 => 'text-xs font-bold py-1 px-3',
+                                3 => 'text-sm font-extrabold py-1.5 px-3.5',
+                                4 => 'text-base font-black py-1.5 px-4',
+                                5 => 'text-lg font-black py-2 px-4 shadow-xs',
+                            ];
+                            $cls = $sizeClasses[$item['level']] ?? $sizeClasses[3];
+                        @endphp
+                        <button type="button"
+                            @click="$dispatch('open-article-drilldown', {
+                                title: 'Analisis Isu Topik: {{ addslashes($item['word']) }}',
+                                subtitle: 'Wacana Utama Warga • Frekuensi: {{ $item['count'] }} Sebutan',
+                                keyword: '{{ $item['word'] }}',
+                                startDate: '{{ $startDate }}',
+                                endDate: '{{ $endDate }}'
+                            })"
+                            class="{{ $cls }} rounded-xl transition-all duration-200 transform hover:scale-108 hover:-translate-y-0.5 cursor-pointer bg-white dark:bg-slate-800/90 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-700/60 hover:border-indigo-500 hover:shadow-md hover:shadow-indigo-500/20 flex items-center gap-1.5 group"
+                            title="Klik untuk membuka {{ $item['count'] }} artikel dengan kata '{{ $item['word'] }}'">
+                            <span>{{ $item['word'] }}</span>
+                            <span class="text-[10px] font-mono text-indigo-600/70 dark:text-indigo-400/60 font-bold group-hover:text-indigo-800 dark:group-hover:text-indigo-200">
+                                {{ $item['count'] }}
+                            </span>
+                        </button>
+                    @empty
+                        <div class="text-xs text-slate-400 italic py-8 text-center">
+                            Belum ada frekuensi kata wacana terdeteksi.
+                        </div>
+                    @endforelse
+                </div>
+
+                <div class="pt-2 border-t border-indigo-500/10 text-[10px] text-indigo-700/80 dark:text-indigo-400/80 font-medium text-center">
+                    Mengukur entitas, tokoh, dan objek pembangunan yang paling banyak diperbincangkan.
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- ROW: Anatomi Spektrum Emosi & Bilik Geospasial Preview --}}
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {{-- Left: Anatomi 6 Spektrum Emosi --}}

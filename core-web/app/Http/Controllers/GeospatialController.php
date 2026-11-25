@@ -46,8 +46,9 @@ class GeospatialController extends Controller
 
         $districtStats = [];
         $totalTerritorialMentions = 0;
-        $rawanCount = 0;
         $kondusifCount = 0;
+        $atensiCount = 0;
+        $rawanCount = 0;
 
         foreach ($canonicalDistricts as $name) {
             $alias = str_replace('Bandar Kedungmulyo', 'Bandarkedung', $name);
@@ -60,25 +61,26 @@ class GeospatialController extends Controller
             $neg = (int) $matched->sum('neg');
             $neu = (int) $matched->sum('neu');
             $nss = $total > 0 ? round((($pos - $neg) / $total) * 100, 1) : 0.0;
+            $posPct = $total > 0 ? round(($pos / $total) * 100, 1) : 0.0;
             $totalTerritorialMentions += $total;
 
-            $status = 'Kondusif';
-            $color = '#06b6d4'; // Cyan default
-
-            if ($total >= 3 && ($neg / max(1, $total)) >= 0.40) {
-                $status = 'Rawan Keluhan';
-                $color = '#f43f5e'; // Rose crimson
-                $rawanCount++;
-            } elseif ($nss >= 15) {
+            // Klasifikasi Sentimen Teritori yang Realistis & Terkalibrasi
+            if ($nss >= 10.0 || ($total >= 5 && $posPct >= 30.0)) {
                 $status = 'Sangat Kondusif';
                 $color = '#10b981'; // Emerald
                 $kondusifCount++;
-            } elseif ($nss < 0) {
+            } elseif ($nss >= -30.0 || ($total >= 5 && $posPct >= 20.0)) {
+                $status = 'Kondusif';
+                $color = '#06b6d4'; // Cyan
+                $kondusifCount++;
+            } elseif ($nss >= -60.0) {
                 $status = 'Perlu Atensi';
                 $color = '#f59e0b'; // Amber
-                $rawanCount++;
+                $atensiCount++;
             } else {
-                $kondusifCount++;
+                $status = 'Rawan Keluhan';
+                $color = '#f43f5e'; // Rose crimson
+                $rawanCount++;
             }
 
             $districtStats[$name] = [
@@ -88,6 +90,7 @@ class GeospatialController extends Controller
                 'neg' => $neg,
                 'neu' => $neu,
                 'nss' => $nss,
+                'posPct' => $posPct,
                 'status' => $status,
                 'color' => $color,
             ];
@@ -131,8 +134,9 @@ class GeospatialController extends Controller
             'leaderboardByNegative',
             'leaderboardByPositive',
             'totalTerritorialMentions',
-            'rawanCount',
             'kondusifCount',
+            'atensiCount',
+            'rawanCount',
             'topVolumeDistrict',
             'topPositiveDistrict',
             'topCriticalDistrict',

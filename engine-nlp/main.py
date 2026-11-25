@@ -1,4 +1,5 @@
 import os
+import csv
 import hashlib
 import feedparser
 import trafilatura
@@ -30,13 +31,12 @@ except Exception:
     pass
 
 # Kamus Normalisasi Slang & Dialek Daerah (Contoh Awal)
-SLANG_LOCAL_DICTIONARY: Dict[str, str] = {
+BASE_SLANG_LOCAL_DICTIONARY: Dict[str, str] = {
     # Slang & Singkatan Populer
     "gak": "tidak",
     "nggak": "tidak",
     "bgt": "banget",
     "banget": "sangat",
-    "bgt": "sangat",
     "bener": "benar",
     "gimana": "bagaimana",
     "gmna": "bagaimana",
@@ -51,7 +51,7 @@ SLANG_LOCAL_DICTIONARY: Dict[str, str] = {
     "jos": "bagus",
     "josss": "sangat bagus",
     
-    # Dialek Jawa / Daerah
+    # Dialek Jawa / Daerah Jombang
     "dalan": "jalan",
     "ajur": "rusak",
     "remuk": "rusak parah",
@@ -73,6 +73,29 @@ SLANG_LOCAL_DICTIONARY: Dict[str, str] = {
     "banjir rek": "banjir",
     "kebanjiran": "tergenang banjir",
 }
+
+def _load_slang_dataset() -> Dict[str, str]:
+    """Memuat slang.csv dari adeariniputri dan menggabungkannya dengan dialek lokal."""
+    d = dict(BASE_SLANG_LOCAL_DICTIONARY)
+    csv_path = os.path.join(os.path.dirname(__file__), "data", "slang.csv")
+    if os.path.exists(csv_path):
+        try:
+            with open(csv_path, "r", encoding="utf-8") as f:
+                reader = csv.reader(f)
+                next(reader, None) # skip header
+                for row in reader:
+                    if len(row) >= 2:
+                        s = row[0].strip().lower()
+                        form = row[1].strip().lower()
+                        if s and form:
+                            d[s] = form
+        except Exception as e:
+            print(f"Warning loading slang.csv: {e}")
+    # Local Jombang dialect takes final precedence
+    d.update(BASE_SLANG_LOCAL_DICTIONARY)
+    return d
+
+SLANG_LOCAL_DICTIONARY: Dict[str, str] = _load_slang_dataset()
 
 class ScrapeFeedRequest(BaseModel):
     feed_url: str
